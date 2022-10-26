@@ -10,6 +10,24 @@ Register a lambda function for orchestration  | Manager | 1.0
 Keep state of the execution for all pipelines | Orchestrator | 1.0
  Register an event for orchestration | Manager | 1.0
 
+# Components
+## Management CLI
+Manage registration, management and parametrization of lambda functions through a convenient CLI workflow. 
+
+It provides the following commands
+Command | Description 
+------ | --------
+init | Initializess the state storage backend
+list functions | Retrieves the list of available lambda functions in the account
+list schedules | Lists the created triggers in the system
+list events | Lists all events in the system
+register LAMBDA | Adds the selected Lambda under management in the ingestion framework
+schedule LAMBDA | Places a lambda under a given schedule
+trigger LAMBDA | Place a lambda under a event trigger through a specified event
+trigger 
+
+## Azure function SDK
+
 
  ## Orchestration
  The service allows users to trigger lambdas in an event driven, or a trigger based fashion
