@@ -41,3 +41,22 @@ def init(
     """Initialize the application"""
     app_init_status = config.init_app() 
     return app_init_status
+
+@app.command('reset')
+def reset(
+
+) -> None:
+    """
+    Resets the application to a clean state.
+    
+    Drops all used tables, discarding all historical application 
+    state and system logs. 
+    """
+    confirmation = typer.confirm("Do you want to completely delete the application state?")
+    if confirmation:
+        typer.secho("Deleting application state", fg='green')
+        config._reset_application()
+        typer.secho("Dropping application tables", fg='green')
+        config._reset_database()
+        
+    typer.Exit(0)
