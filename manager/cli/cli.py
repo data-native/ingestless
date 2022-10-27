@@ -5,8 +5,17 @@ from manager import __app_name__, __version__
 from manager import config
 from manager.enums import StatusCode, Errors
 
-app = typer.Typer()
+from manager.cli.trigger_cli import trigger_app
+from manager.cli.functions_cli import function_app
+from manager.cli.schedules_cli import schedule_app
 
+# Define the app interface
+app = typer.Typer()
+app.add_typer(function_app, name="functions")
+app.add_typer(schedule_app, name="schedules")
+app.add_typer(trigger_app, name="triggers")
+
+# Define general methods
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"{__app_name__} v{__version__}")
@@ -42,18 +51,3 @@ def init(
             'Successfully completed setup of the application.', fg='green'
         )
 
-
-@app.command()
-def list(
-    stack_name: str = typer.Option(
-        'test',
-        "--stack",
-        "-s",
-        prompt="stack containing lambdas?",
-        help="List available lambdas in a certain stack"
-
-    )
-) -> None:
-    """Retrieve the list of all lambdas for the given stack"""
-    typer.secho('List of lambda', fg='green'
-    )
