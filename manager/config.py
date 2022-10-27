@@ -1,5 +1,7 @@
 from configparser import ConfigParser
 from pathlib import Path
+import logging
+import threading
 
 import typer
 
@@ -7,6 +9,7 @@ from manager import __app_name__
 from manager.enums import StatusCode
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 
+# Configure Configuraton parameters
 CONFIG_DIR_PATH = Path(typer.get_app_dir(__app_name__))
 CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
 
@@ -45,18 +48,19 @@ def _init_database(
     #TODO: Define the parameters to use and the table design to apply
     @xxx
     """
-    # Load data
-    parser = ConfigParser()
-    with open('../config.ini') as f:
-        parser.read_file(f)
-    
+
     # Ensure tables are initialized
+    t1 = threading.Thread(target=TriggerModel.create_table, kwargs={'read_capacity_units':1, 'write_capacity_units': 1,  'wait':True})
+    t2 = threading.Thread(target=FunctionModel.create_table, kwargs={'read_capacity_units':1, 'write_capacity_units': 1,  'wait':True})
+    t3 = threading.Thread(target=ScheduleModel.create_table, kwargs={'read_capacity_units':1, 'write_capacity_units': 1,  'wait':True})
+
     if not TriggerModel.exists():
-        TriggerModel.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
+        t1.start()
     if not FunctionModel.exists():
-        FunctionModel.create_table(billing_mode="PAY_PER_REQUEEST", wait=True)
+        t2.start()
     if not ScheduleModel.exists(): 
-        ScheduleModel.create_table(billing_mode="PAY_PER_REQUEEST", wait=True)
+        t3.start()
+
     
     return StatusCode.SUCCESS
 

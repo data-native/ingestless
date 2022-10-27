@@ -1,12 +1,17 @@
+from platform import system
+import configparser
+import logging 
+
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute 
 
-from manager.config import parser
+parser = configparser.ConfigParser()
+parser.read('./manager/config.ini')
 
-#TODO: Automatically set dev and production env variable based on operating system
-env = 'dev'
+env = 'dev' if system().lower() == 'darwin' else 'prod'
 
 HOST = parser[env]['dynamodb_host']
+
 FUNCTION_TABLE_NAME = parser['DEFAULT']['function_table_name']
 SCHEDULE_TABLE_NAME = parser['DEFAULT']['schedule_table_name']
 TRIGGER_TABLE_NAME = parser['DEFAULT']['trigger_table_name']
@@ -16,8 +21,8 @@ class FunctionModel(Model):
     A serverless function to orchestrate 
     """
     class Meta:
-        table_name = FUNCTION_TABLE_NAME
-        host = HOST
+        table_name = FUNCTION_TABLE_NAME 
+        host = HOST 
     name = UnicodeAttribute(hash_key=True) 
     arn = UnicodeAttribute()
     schedule = UnicodeAttribute()
@@ -28,7 +33,7 @@ class TriggerModel(Model):
     """
     class Meta:
         table_name = TRIGGER_TABLE_NAME
-        host = HOST
+        host = HOST 
     name = UnicodeAttribute(hash_key=True)
     linked_element = UnicodeAttribute(range_key=True)
     trigger_element_arn = UnicodeAttribute()
@@ -39,7 +44,7 @@ class ScheduleModel(Model):
     """
     class Meta:
         table_name = SCHEDULE_TABLE_NAME
-        host = HOST
+        host = HOST 
     name = UnicodeAttribute(hash_key=True)
     cron = UnicodeAttribute()
     

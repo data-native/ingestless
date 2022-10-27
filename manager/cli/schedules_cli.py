@@ -20,7 +20,6 @@ def schedule_create():
     Designed to iterate over passed CRON strings until they are correctly formated and confirmed by user.
     """
     name = typer.prompt("Schedule name")
-    #TODO: Implement cron parser
     confirmed=False
     while not confirmed:
         valid_cron = False 

@@ -37,17 +37,7 @@ def version  (
 @app.command()
 def init(
     
-) -> None:
+) -> StatusCode:
     """Initialize the application"""
     app_init_status = config.init_app() 
-    if app_init_status != StatusCode.SUCCESS:
-        typer.secho(
-            f'Creating config file failed with "{Errors[app_init_status]}"',
-            fg=typer.colors.RED,
-        )
-        raise typer.Exit(1)
-    else:
-        typer.secho(
-            'Successfully completed setup of the application.', fg='green'
-        )
-
+    return app_init_status
