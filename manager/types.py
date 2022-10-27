@@ -1,17 +1,18 @@
 from dataclasses import dataclass
 
 @dataclass
-class Schedule:
+class ScheduleItem:
     "Class for passing Schedule definitions"
     name: str
     cron: str
 
 @dataclass
-class Function:
+class FunctionItem:
     name: str
     arn: str
+    schedule: str
 
 @dataclass
-class Trigger:
+class TriggerItem:
     name: str
     

@@ -3,7 +3,7 @@ from cron_converter import Cron
 from tabulate import tabulate
 
 from manager.manager import Manager
-from manager.types import Schedule
+from manager.types import ScheduleItem
 
 schedule_app = typer.Typer()
 
@@ -15,6 +15,10 @@ manager = Manager()
 # Define the app interface
 @schedule_app.command("create")
 def schedule_create():
+    """
+    Iteratively create a schedule, confirm the cron timing table and commit it to the backend.
+    Designed to iterate over passed CRON strings until they are correctly formated and confirmed by user.
+    """
     name = typer.prompt("Schedule name")
     #TODO: Implement cron parser
     confirmed=False
@@ -28,21 +32,18 @@ def schedule_create():
                     'output_month_names': True
                 })
                 valid_cron = True
+                # Create output for confirmation
+                schedule_print = zip(['minute', 'hour', 'day', 'month', 'day of week', 'year'][:len(cron.to_list())], cron.to_list())
+                confirmed = typer.confirm(f"You want to schedule for:\n{tabulate(schedule_print)}")
+                try:
+                    schedule = ScheduleItem(name, cron)
+                    manager.register_schedule(schedule)
+                except Exception as e:
+                    typer.secho(f'Unable to register schedule: {e}', fg='red')
+                    typer.Exit(1)
+                typer.secho(f'Successfully created schedule {name}: {cron}', fg='green')
+                typer.Exit(0)
             except ValueError:
                 typer.secho(f"The cron: {schedule} is in an incorrect format. Please provide again.")
-        # Create output for confirmation
-        schedule_print = zip(['minute', 'hour', 'day', 'month', 'day of week', 'year'][:len(cron.to_list())], cron.to_list())
 
-        confirmed = typer.confirm(f"You want to schedule for:\n{tabulate(schedule_print)}")
-
-    typer.secho(f"Creating schedule {schedule}", fg="green")
-
-    #TODO: Call scheduler with specified details
-    schedule = Schedule(name, cron)
-    try:
-        manager.register_schedule(schedule)
-    except Exception as e:
-        typer.secho(f'Unable to register schedule: {e}', fg='red')
-        typer.Exit(1)
-    typer.secho(f'Successfully created schedule {name}: {cron}', fg='green')
-    typer.Exit(0)
+            typer.secho(f"Creating schedule {schedule}", fg="green")

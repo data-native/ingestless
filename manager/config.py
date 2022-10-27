@@ -1,14 +1,20 @@
-import configparser
+from configparser import ConfigParser
 from pathlib import Path
 
 import typer
 
 from manager import __app_name__
 from manager.enums import StatusCode
-
+from manager.models import FunctionModel, ScheduleModel, TriggerModel
 
 CONFIG_DIR_PATH = Path(typer.get_app_dir(__app_name__))
 CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
+
+def init_parser(path: str) -> ConfigParser:
+    """Load configuration"""
+    parser = ConfigParser()
+    parser.read(path)
+    return parser
 
 def init_app() -> StatusCode:
     """Initialize the application"""
@@ -39,11 +45,20 @@ def _init_database(
     #TODO: Define the parameters to use and the table design to apply
     @xxx
     """
-    config_parser = configparser.ConfigParser()
-    config_parser["General"] = {"database": name }
-    try:
-        with CONFIG_FILE_PATH.open("w") as file:
-            config_parser.write(file)
-    except OSError:
-        return StatusCode.DB_WRITE_ERROR
+    # Load data
+    parser = ConfigParser()
+    with open('../config.ini') as f:
+        parser.read_file(f)
+    
+    # Ensure tables are initialized
+    if not TriggerModel.exists():
+        TriggerModel.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
+    if not FunctionModel.exists():
+        FunctionModel.create_table(billing_mode="PAY_PER_REQUEEST", wait=True)
+    if not ScheduleModel.exists(): 
+        ScheduleModel.create_table(billing_mode="PAY_PER_REQUEEST", wait=True)
+    
     return StatusCode.SUCCESS
+
+# Initializing the parser
+parser = init_parser('../config.ini')

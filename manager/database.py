@@ -1,17 +1,21 @@
 from typing import NamedTuple, List, Any, Dict
 from manager.enums import StatusCode, Errors
-
+from manager.types import FunctionItem
+from manager.models import FunctionModel, ScheduleModel, TriggerModel
 class DBResponse(NamedTuple):
     items: Dict[str, Dict[str, Any]]
     status: StatusCode
-
-
 class DatabaseHandler:
 
     def __init__(self):
         self._registered_lambdas: Dict[str, Dict[str, Any]] = {}
 
-    def read_registered_lambdas(self, stack: str='', details: bool = False):
+    def write_function(self, function: FunctionItem):
+        """
+        Write a function to the database. 
+        """
+
+    def read_registered_functions(self, stack: str='', details: bool = False):
         """
         Read the list of registered lambdas managed in the orchestration
         framework. 
