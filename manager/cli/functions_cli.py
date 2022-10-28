@@ -25,9 +25,14 @@ def list_functions(
         "-s",
         prompt="stack containing lambdas?",
         help="List available lambdas in a certain stack"
-
-    )
+    ),
+    attributes: list[str] = typer.Option(
+        ['FunctionName', 'FunctionArn', 'Runtime'],
+        "--attr",
+        "-a" 
+        )
 ) -> None:
     """Retrieve the list of all lambdas for the given stack"""
     functions = manager.list_functions()
-    typer.secho(functions, fg='green')
+    filtered_return = [{k: f[k] for k in f.keys() & set(attributes)} for f in functions]
+    typer.secho(filtered_return, fg='green')

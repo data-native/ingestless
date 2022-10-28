@@ -57,7 +57,7 @@ class Manager:
             StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
 
-    def list_functions(self, stack: str=''):
+    def list_functions(self, stack: str='') -> List[dict]:
         """
         Lists the available lambda functions in a given account. 
         Optionally filter by deployment stack, accountId.

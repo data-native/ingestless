@@ -63,12 +63,9 @@ class AWSProvider(BackendProvider):
             self._initialize_client(service)
 
     # Functions____________
-    def list_functions(self) -> None:
+    def list_functions(self) -> List[dict]:
         functions = self.get_client(Service.Function).list_functions()
         return functions['Functions']
-    
-
-
         
 # class AzureProvider(BackendProvider):
     # pass
