@@ -1,9 +1,10 @@
 from typing import Optional
 import typer
+import textwrap
 
 from manager import __app_name__, __version__
 from manager import config
-from manager.enums import StatusCode, Errors
+from manager.enums import StatusCode, Errors, Provider
 
 from manager.cli.trigger_cli import trigger_app
 from manager.cli.functions_cli import function_app
@@ -39,7 +40,27 @@ def init(
     
 ) -> StatusCode:
     """Initialize the application"""
-    app_init_status = config.init_app() 
+    new_line = '\n'
+    # Initial Screen ======
+    typer.secho(textwrap.dedent(
+    """
+    --------- I N G E S T L E S S ----------- 
+    The serverless data ingestion orchestration framework,
+    that hyperscales your ingest and downscales your cost.
+
+    We are getting ready to set up the orchestration manager
+    """), fg='green')
+
+    selected_provider = Provider(int(typer.prompt(
+    textwrap.dedent(f""" Please select the backend platform:
+    {''.join([f"{new_line}{idx+1}) {provider.name}" for idx, provider in enumerate(Provider)])}
+    """))))
+    typer.secho(f"Initializing state manager for {selected_provider.name}")
+
+    # Configuring application 
+    app_config_status = config.config_app(provider=selected_provider)
+    # Initializing application based on configuration presets
+    app_init_status = config.init_app(provider=selected_provider) 
     return app_init_status
 
 @app.command('reset')
