@@ -1,4 +1,14 @@
+"""
+Implements the CLI interface to the `function` subapplication.
+
+Functions on the chosen backend can be CRUDed and associated 
+with orchestration elements, such as triggers and schedules
+also managed in the system.
+"""
 import typer
+from manager.manager import Manager
+
+manager = Manager()
 
 function_app = typer.Typer()
 
@@ -19,5 +29,5 @@ def list_functions(
     )
 ) -> None:
     """Retrieve the list of all lambdas for the given stack"""
-    typer.secho('List of lambda', fg='green'
-    )
+    functions = manager.list_functions()
+    typer.secho(functions, fg='green')

@@ -65,7 +65,7 @@ class AWSProvider(BackendProvider):
     # Functions____________
     def list_functions(self) -> None:
         functions = self.get_client(Service.Function).list_functions()
-        return functions
+        return functions['Functions']
     
 
 

@@ -1,13 +1,35 @@
+from configparser import ConfigParser
 from manager.enums import StatusCode
 from manager.database import DatabaseHandler
 from typing import Iterator, List, Dict, Any, Optional
 
+from manager.enums import Provider
+from manager.provider.AWSProvider import AWSProvider
+from manager.provider.abstract_provider import BackendProvider
 from manager.types import FunctionItem, TriggerItem, ScheduleItem
 from manager.models import ScheduleModel, TriggerModel, FunctionModel
+from manager.config import ConfigManager
+
 class Manager:
 
     def __init__(self):
         self._registered_lambdas = []
+        self._config_manager = ConfigManager()
+        self._provider = self._init_provider()
+
+    # INITIALITAION___________________
+    def _init_provider(self):
+        """Initializes the selected provider"""
+        # Read configuration for provider
+        try:
+            provider = self._config_manager.provider()
+        except Exception:
+            raise ValueError(f"Configuration Parameter for provider not correctly set")
+        # Select the associated Provider
+        provider_switch = {
+            Provider.AWS : AWSProvider,
+        }
+        return provider_switch[provider]()
 
     # FUNCTION_________________________
     def register_function(self,
@@ -35,7 +57,7 @@ class Manager:
             StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
 
-    def list_functions(self, stack: str='') -> Iterator[FunctionModel]:
+    def list_functions(self, stack: str=''):
         """
         Lists the available lambda functions in a given account. 
         Optionally filter by deployment stack, accountId.
@@ -44,8 +66,8 @@ class Manager:
         @region: Select a region to list lambdas in
         """
         try:
-            functions = FunctionModel.scan()
-            yield functions.next()
+            functions = self._provider.list_functions()
+            return functions
         except Exception as e:
             #TODO: Log exception
             raise(e) 

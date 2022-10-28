@@ -1,10 +1,12 @@
 import json
+from typing import Iterable
 import pytest
 
 from typer.testing import CliRunner
 
 from manager.database import DatabaseHandler
 from manager.enums import StatusCode
+from manager.types import ScheduleItem
 from manager.manager import Manager
 
 
@@ -60,11 +62,14 @@ def test_unregister_function(local_manager):
     local_manager.unregister_lambda('testlambda')
 
 def test_list_functions(local_manager):
-    functions = local_manager.list_lambdas()
+    functions = local_manager.list_functions()
+    assert isinstance(functions, Iterable)
+    assert isinstance(functions[0], dict)
+    
 
-def test_register_schedules(local_manager):
-    test_schedules = [{}]
-    schedules = local_manager.register_schedules()
+def test_register_schedule(local_manager):
+    schedule = ScheduleItem('test_schedule', '* * * * *')
+    local_manager.register_schedule(schedule)
 
 @pytest.mark.parametrize(
     "schedule_name, expected",

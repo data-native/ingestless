@@ -13,12 +13,27 @@ from manager.provider.AWSProvider import AWSProvider
 from manager.provider.abstract_provider import BackendProvider
 
 # Set Configuraton parameters
-CONFIG_DIR_PATH = Path(typer.get_app_dir(__app_name__))
+CONFIG_DIR_PATH = Path('./manager') 
 CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
 
 # Table configuration
 REGISTERED_TABLES = [FunctionModel, ScheduleModel, TriggerModel]
 
+class ConfigManager:
+    def __init__(self) -> None:
+        self.configuration = self._read_config()
+
+    def _read_config(self):
+        "Reads configuration"
+        config = ConfigParser()
+        config.read(CONFIG_FILE_PATH)
+        return config
+    
+    def provider(self):
+        "Get the configured backend provider"
+        provider_config =  self.configuration['DEFAULT']['provider'] 
+        return Provider[provider_config]
+        
 def init_parser(path: str) -> ConfigParser:
     """Load configuration"""
     parser = ConfigParser()
@@ -147,5 +162,3 @@ def _init_database(
         
     return StatusCode.SUCCESS
 
-# Initializing the parser
-parser = init_parser('../config.ini')
