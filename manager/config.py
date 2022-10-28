@@ -9,7 +9,8 @@ from typing import List
 from manager import __app_name__
 from manager.enums import StatusCode, Provider
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
-from manager.provider import BackendProvider
+from manager.provider.AWSProvider import AWSProvider
+from manager.provider.abstract_provider import BackendProvider
 
 # Set Configuraton parameters
 CONFIG_DIR_PATH = Path(typer.get_app_dir(__app_name__))
@@ -91,8 +92,7 @@ def _init_config_file() -> StatusCode:
 
 # Configuration settings across providers
 def _init_aws_config() -> StatusCode:
-    aws_provider = BackendProvider.new(Provider.AWS)
-    aws_provider.get_configuration()
+    aws_provider = AWSProvider() 
     return StatusCode.SUCCESS
 
 def _init_azure_config() -> StatusCode:

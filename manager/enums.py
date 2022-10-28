@@ -29,3 +29,16 @@ Errors = {
     StatusCode.DB_READ_ERROR: "database read error",
     StatusCode.DB_WRITE_ERROR: "database write error",
 }
+
+class Service(Enum):
+    """
+    List of services orchestrated across backend providers.
+    
+    Each service provider must implement a mapping dictionary,
+    to place the correct native service in relation to the general
+    service description used here. 
+    """
+    Function = auto()
+    StateMachine = auto()
+    ServiceBus = auto()
+    Top = auto()
