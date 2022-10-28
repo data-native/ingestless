@@ -92,7 +92,7 @@ def _init_config_file() -> StatusCode:
 # Configuration settings across providers
 def _init_aws_config() -> StatusCode:
     aws_provider = BackendProvider.new(Provider.AWS)
-    aws_provider.local_configuration()
+    aws_provider.get_configuration()
     return StatusCode.SUCCESS
 
 def _init_azure_config() -> StatusCode:

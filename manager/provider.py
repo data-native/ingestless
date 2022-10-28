@@ -5,15 +5,16 @@ Backend Utility functions
 Services to enable the coordination with the 
 
 """
+from abc import ABC, abstractmethod
 from configparser import ConfigParser
-from typing import Optional, List
+from multiprocessing.sharedctypes import Value
+from typing import Optional, List, TypeVar
 import logging
 
 from manager.enums import Provider
-from manager.provider import BackendProvider
+import boto3
 
-
-class BackendProvider:
+class BackendProvider(ABC):
     """
     General class managing the interaction with the backend provider
     """
@@ -22,24 +23,46 @@ class BackendProvider:
         self.parser = ConfigParser()
     
     @classmethod
-    def new(cls, provider: Provider) -> BackendProvider:
+    def new(cls, provider: Provider):
         """
         Factory pattern for subclasses
         """
         provider_switch = {
             Provider.AWS : AWSProvider,
-            Provider.AZURE : AzureProvider,
-            Provider.GCP : GCPProvider,
-            Provider.CLOUDNATIVE : CloudNativeProvider
+            # Provider.AZURE : AzureProvider,
+            # Provider.GCP : GCPProvider,
+            # Provider.CLOUDNATIVE : CloudNativeProvider
         }
         return provider_switch[provider]()
+    
+    @abstractmethod
+    def get_profiles(self) -> List:
+        """Retrieves the list of available profiles"""
+        pass
 
-    def local_configuration(self) -> None:
+    @abstractmethod
+    def switch_profile(self, profile: str) -> None:
+        """Switches to a given profile"""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def get_region(self) -> None:
+        """Retrieves the current region"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def is_configured(self) -> bool:
+        """Tests if configuration is provided"""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def get_configuration(self) -> None:
         """
         Retrieve the local configuration for the backend provider
         """
         raise NotImplementedError
     
+    @abstractmethod
     def set_local_configuration(self):
         """
         
@@ -47,36 +70,48 @@ class BackendProvider:
         raise NotImplementedError
 
     
-    
-
-
 class AWSProvider(BackendProvider):
     """
     AWS Backend provider implementation
     """
+    def __init__(self, profile:str='') -> None:
+        self.profile = None 
+        self.session= boto3.Session(profile_name=profile) if profile !='' else boto3.Session()
+        super().__init_subclass__()
 
-    def __init__(self, *args, **kwargs):
-        super.__init__(*args, **kwargs)
+    def is_configured(self) -> bool:
+        return self.session is not None
 
-    def local_configuration(self) -> Optional[dict]:
+    def get_configuration(self):
         # Check if aws credentials are set
-        try:
-            credentials = self.parser.read('~/.aws/credentials')
-        except:
-            logging.debug("No AWS credentials set locally")
-        try:
-            config = self.parser.read('~/.aws/config')
-        except:
-            logging.debug("No AWS config set locally")
-        return 
+        credentials = self.session.get_credentials()
+        return credentials
+    
+    def get_profiles(self) -> List:
+        profiles = self.session.available_profiles
+        return profiles
+    
+    def switch_profile(self, profile: str) -> None:
+        profiles = self.get_profiles()
+        if not profile in profiles:
+            raise ValueError(f'Profile: {profile} not set. Available: {profiles}')
+        self.session = boto3.Session(profile_name=profile) 
 
-        return {}
+    def list_functions(self) -> None:
+        pass
 
-class AzureProvider(BackendProvider):
-    pass
+    def set_local_configuration(self):
+        return super().set_local_configuration()
+    
+    def get_region(self) -> None:
+        return super().get_region()
 
-class GCPProvider(BackendProvider):
-    pass
+    
+# class AzureProvider(BackendProvider):
+    # pass
 
-class CloudNativeProvider(BackendProvider):
-    pass
+# class GCPProvider(BackendProvider):
+    # pass
+
+# class CloudNativeProvider(BackendProvider):
+    # pass
