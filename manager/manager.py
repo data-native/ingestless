@@ -114,8 +114,9 @@ class Manager:
         """
         try:
             schedule.save()
-        except:
+        except Exception as e:
             #TODO: Log exception
+            raise(e)
             return StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
     
@@ -136,7 +137,7 @@ class Manager:
         """
         try:
             schedules = ScheduleModel.scan()
-            yield schedules.next()
+            return list(schedules)
         except Exception as e:
             #TODO: Log exception
             raise e 

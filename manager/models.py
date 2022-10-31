@@ -4,7 +4,7 @@ import configparser
 import logging 
 
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute, JSONAttribute
+from pynamodb.attributes import UnicodeAttribute, BinaryAttribute, BooleanAttribute, UTCDateTimeAttribute, JSONAttribute, ListAttribute
 
 parser = configparser.ConfigParser()
 parser.read('./manager/config.ini')
@@ -46,7 +46,8 @@ class ScheduleModel(Model):
         table_name = SCHEDULE_TABLE_NAME
         host = HOST 
     name = UnicodeAttribute(hash_key=True)
-    cron = UnicodeAttribute()
+    cron = BinaryAttribute()
+    associated = ListAttribute(null=True)
 
 class Models(Enum):
     """Defines the list of models for import in other modules"""

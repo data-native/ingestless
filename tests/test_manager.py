@@ -76,10 +76,18 @@ def test_list_functions(local_manager):
     functions = local_manager.list_functions()
     assert isinstance(functions, Iterable)
     assert isinstance(functions[0], dict)
-    
+
+def test_list_registered_functions(local_manager: Manager):
+    #TODO: Extend to create temporary tests in temp local db
+    # local_manager.register_function(local_manager.models.FUNCTION("test", ))
+    functions = local_manager.list_registered_functions() 
+
+    assert isinstance(functions, list)
+    for f in functions:
+        assert all([k in f._get_keys() for k in ['name', 'attributes', 'schedule']])
 
 def test_register_schedule(local_manager):
-    schedule = ScheduleItem('test_schedule', '* * * * *')
+    schedule = local_manager.models.SCHEDULE('test_schedule', cron='* * * * *')
     local_manager.register_schedule(schedule)
 
 @pytest.mark.parametrize(

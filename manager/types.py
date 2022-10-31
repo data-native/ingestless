@@ -8,6 +8,7 @@ class FunctionItem:
     """
     name: str
     attributes: dict
+    
 
 @dataclass
 class ScheduleItem:

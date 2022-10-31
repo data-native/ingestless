@@ -39,19 +39,7 @@ def function_create(
     orchestrated.
     """
     # TODO: Displey the functions not yet registered in a numbered list
-    new_line='\n'
-    results = []
-    functions = manager.list_functions()
-    # Conditionally filter based on set keys
-    available_resources= list(set([key for f in functions for key in f.keys()]))
-    if attributes:
-        results = [{k: f[k] for k in f.keys() & set(attributes)} for f in functions]
-        if not all([bool(d) for d in results]):
-            typer.secho(f"The filter set did not return any repsonses: Please use the following arguments only:{new_line} {new_line.join(available_resources)}", fg='red')
-            typer.Exit(0)
-            return
-    for idx, function in enumerate(results):
-        typer.secho(f"{idx}) {function['FunctionName']}: {json.dumps(function, indent=2)}", fg='green')
+    functions = display_functions(attributes=attributes)
     # TODO: Display a prompt allowing the user to enter the number of the function to register
     selected_ids = typer.prompt("Select one or more functions to register.", type=int)
     selection = functions[selected_ids]
@@ -61,7 +49,8 @@ def function_create(
     # TODO: Write the new function entry into the backend table
     status = manager.register_function(manager.models.FUNCTION(
         name=selection['FunctionName'],
-        attributes=selection
+        attributes = selection,
+        schedule = None
     ))
     if status != StatusCode.SUCCESS:
         typer.secho("Error writing element", fg='Red')
@@ -69,7 +58,7 @@ def function_create(
 
     # typer.secho(f"Putting function {arn} under orchestration")
     
-@function_app.command("list-all")
+@function_app.command("list")
 def list_all_functions(
     stack_name: str = typer.Option(
         'test',
@@ -86,19 +75,7 @@ def list_all_functions(
         )
 ) -> None:
     """Retrieve the list of all lambdas for the given stack"""
-    new_line='\n'
-    results = []
-    functions = manager.list_functions()
-    # Conditionally filter based on set keys
-    available_resources= list(set([key for f in functions for key in f.keys()]))
-    if attributes:
-        results = [{k: f[k] for k in f.keys() & set(attributes)} for f in functions]
-        if not all([bool(d) for d in results]):
-            typer.secho(f"The filter set did not return any repsonses: Please use the following arguments only:{new_line} {new_line.join(available_resources)}", fg='red')
-            typer.Exit(0)
-            return
-    for idx, function in enumerate(results):
-        typer.secho(f"{idx}) {function['FunctionName']}: {json.dumps(function, indent=2)}", fg='green')
+    display_functions(attributes=attributes)
 
 @function_app.command("list-registered")
 def list_all_registered(
@@ -126,6 +103,26 @@ def list_all_registered(
             # return
     # TODO: Display results as table
     scope = "in total" if app == '' else f"for {app}"
-    typer.secho(f"Registered functions{new_line}-------------------{new_line}Currently registered: {len(results)} Functions {scope}", fg='green')
-    # TODO: Display each result in newline with index for selection
-    typer.secho(results )
+    typer.secho(f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(results)} Functions {scope}", fg='green')
+    # Display each result in newline with index for selection
+    typer.secho("App | Name | FunctionHandler | Runtime ")
+    for idx, function in enumerate(results):
+        typer.secho(f"{idx}) {function.name} | {function.attributes['Handler']} | {function.attributes['Runtime']}", )
+    
+
+def display_functions(attributes:List[str]=[]) -> List[dict]:
+    """Displays a the list of available functions to the cli"""
+    new_line='\n'
+    results = []
+    functions = manager.list_functions()
+    # Conditionally filter based on set keys
+    available_resources= list(set([key for f in functions for key in f.keys()]))
+    if attributes:
+        results = [{k: f[k] for k in f.keys() & set(attributes)} for f in functions]
+        if not all([bool(d) for d in results]):
+            typer.secho(f"The filter set did not return any repsonses: Please use the following arguments only:{new_line} {new_line.join(available_resources)}", fg='red')
+            typer.Exit(0)
+            return []
+    for idx, function in enumerate(results):
+        typer.secho(f"{idx}) {function['FunctionName']}: {json.dumps(function, indent=2)}", fg='green')
+    return functions

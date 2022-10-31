@@ -1,4 +1,5 @@
 import typer
+import pickle
 from cron_converter import Cron
 from tabulate import tabulate
 
@@ -35,7 +36,7 @@ def schedule_create():
                 schedule_print = zip(['minute', 'hour', 'day', 'month', 'day of week', 'year'][:len(cron.to_list())], cron.to_list())
                 confirmed = typer.confirm(f"You want to schedule for:\n{tabulate(schedule_print)}")
                 try:
-                    schedule = ScheduleItem(name, cron)
+                    schedule = manager.models.SCHEDULE(name, cron=pickle.dumps(cron))
                     manager.register_schedule(schedule)
                 except Exception as e:
                     typer.secho(f'Unable to register schedule: {e}', fg='red')
@@ -46,3 +47,17 @@ def schedule_create():
                 typer.secho(f"The cron: {schedule} is in an incorrect format. Please provide again.")
 
             typer.secho(f"Creating schedule {schedule}", fg="green")
+
+@schedule_app.command("list")
+def schedule_list_all():
+    """
+    Displays all registered schedules for management
+    """
+    new_line = '\n'
+    schedules = manager.list_schedules()
+    typer.secho(f"{new_line}Registered a total of : {len(schedules)} schedules")
+    typer.echo("----------------------------------------------------")
+    typer.secho(f"Schedule Name | CRON | # of associated functions")
+    for schedule in schedules:
+        cron = pickle.loads(schedule.cron)
+        typer.secho(f"{schedule.name} | {cron } | {schedule.associated}")
