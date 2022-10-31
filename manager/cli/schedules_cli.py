@@ -61,3 +61,13 @@ def schedule_list_all():
     for schedule in schedules:
         cron = pickle.loads(schedule.cron)
         typer.secho(f"{schedule.name} | {cron } | {schedule.associated}")
+
+@schedule_app.command("apply") 
+def apply_schedule_to_function():
+    """
+    Sets a schedule on a given function
+    """
+    
+    # List all available schedules
+
+    # Load

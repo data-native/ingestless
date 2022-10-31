@@ -104,6 +104,9 @@ def test_register_schedule(local_manager):
 def test_unregister_schedule(local_manager, schedule_name, expected):
     removed_schedule = local_manager.unregister_schedule(schedule_name)
 
+def test_schedule_function(local_manager: Manager):
+    False
+    
 
 def test_list_schedules(local_manager):
     schedules = local_manager.list_schedules()

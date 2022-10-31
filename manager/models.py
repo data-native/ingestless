@@ -27,6 +27,7 @@ class FunctionModel(Model):
     name = UnicodeAttribute(hash_key=True) 
     attributes = JSONAttribute()
     schedule = UnicodeAttribute(null=True)
+    app = UnicodeAttribute(null=True)
 
 class TriggerModel(Model):
     """
