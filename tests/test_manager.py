@@ -9,6 +9,7 @@ from manager.enums import StatusCode
 from manager.types import ScheduleItem
 from manager.manager import Manager
 
+runner = CliRunner()
 
 @pytest.fixture
 def local_db():
@@ -56,6 +57,16 @@ def test_register_functions(local_manager, function_name, body, expected):
     status = local_manager.register_lambda(function_name, body)
     assert isinstance(status, dict) 
     assert isinstance(status["status"], StatusCode)
+
+def test_register_function(local_manager: Manager):
+    name = "Testfunction"
+    local_manager.register_function(local_manager.models.FUNCTION(
+        name,
+        attributes={
+            "whatever": "works"
+        }
+    ))
+    assert name in local_manager._registered_lambdas
 
 
 def test_unregister_function(local_manager):

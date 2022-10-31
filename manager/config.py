@@ -12,6 +12,10 @@ from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.provider.AWSProvider import AWSProvider
 from manager.provider.abstract_provider import BackendProvider
 
+#TODO: Integrate into the management class
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 # Set Configuraton parameters
 CONFIG_DIR_PATH = Path('./manager') 
 CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
@@ -27,11 +31,13 @@ class ConfigManager:
         "Reads configuration"
         config = ConfigParser()
         config.read(CONFIG_FILE_PATH)
+        logging.info(f"Read Configuration as: {config}")
         return config
     
     def provider(self):
         "Get the configured backend provider"
-        provider_config =  self.configuration['DEFAULT']['provider'] 
+        provider_config =  self.configuration['DEFAULT']['provider']
+        logging.info(f"Set selected provider: {provider_config}")
         return Provider[provider_config]
         
 def init_parser(path: str) -> ConfigParser:
@@ -39,9 +45,6 @@ def init_parser(path: str) -> ConfigParser:
     parser = ConfigParser()
     parser.read(path or CONFIG_FILE_PATH)
     return parser
-
-#Uti
-
 
 def config_app(
     provider: Provider
@@ -67,7 +70,9 @@ def config_app(
     if typer.prompt("Shall we orchestrate a Stack? [y/n]") == 'y':
         # Get list of available stacks from the account
         stack = typer.prompt
+        logging.info(f"Selected to configure orchestration for a Stack: {stack}")
 
+    logging.info("Successfully completed application configuration")
     return StatusCode.SUCCESS
 
 def init_app(
@@ -125,13 +130,17 @@ def _reset_database() -> StatusCode:
     Drops all tables and recreates a clean state for
      the application.
     """
+    logging.info("Resetting the database")
+    errors = None
     for table in REGISTERED_TABLES:
         try:
             table.delete_table()
+            logging.info(f"Deleted table: {table}")
         except Exception as e:
-            return StatusCode.DB_WRITE_ERROR
+            error = StatusCode.DB_WRITE_ERROR
     _init_database()
-    return StatusCode.SUCCESS
+    
+    return errors or StatusCode.SUCCESS
 
 def _reset_application() -> StatusCode:
     """
@@ -149,10 +158,12 @@ def _init_database(
     #TODO: Define the parameters to use and the table design to apply
     @xxx
     """
+    logging.info("Initializing Database Tables")
     # Ensure tables are initialized
     threads = []
     for table in REGISTERED_TABLES:
         if not table.exists():
+            # table.create_table(write_capacity_units=1, read_capacity_units=1)
             thread = threading.Thread(target=table.create_table, kwargs={'read_capacity_units':1, 'write_capacity_units': 1})
             threads.append(thread)
 

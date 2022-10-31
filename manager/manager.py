@@ -1,23 +1,40 @@
+import logging
 from configparser import ConfigParser
 from manager.enums import StatusCode
 from manager.database import DatabaseHandler
 from typing import Iterator, List, Dict, Any, Optional
+from dataclasses import dataclass
 
 from manager.enums import Provider
 from manager.provider.AWSProvider import AWSProvider
 from manager.provider.abstract_provider import BackendProvider
-from manager.types import FunctionItem, TriggerItem, ScheduleItem
-from manager.models import ScheduleModel, TriggerModel, FunctionModel
+from manager.models import TriggerModel, ScheduleModel, FunctionModel
 from manager.config import ConfigManager
 
+
+class Models:
+    FUNCTION = FunctionModel
+    SCHEDULE = ScheduleModel
+    TRIGGER = TriggerModel
+
 class Manager:
+    """
+    Provides the general interface to the application logic.
+    
+    * CRUD API for all supported types.
+    """
 
     def __init__(self):
-        self._registered_lambdas = []
+        self.models =  Models
+        self._registered_lambdas = {} 
         self._config_manager = ConfigManager()
+        self._backend = DatabaseHandler() 
         self._provider = self._init_provider()
 
     # INITIALITAION___________________
+    def _init_backend(self):
+        """Initializes the backend application"""
+    
     def _init_provider(self):
         """Initializes the selected provider"""
         # Read configuration for provider
@@ -31,18 +48,21 @@ class Manager:
         }
         return provider_switch[provider]()
 
+
     # FUNCTION_________________________
     def register_function(self,
-        function: FunctionItem,
+        function: Models.FUNCTION,
     ) -> StatusCode:
         """
         Register a lambda function with the orchestrator.
         
         """ 
         try:
-            function_item = FunctionModel(function)
-            function_item.save()
-        except:
+            logging.info(f"Registering FunctionModel object {function}")
+            function.save()
+            self._registered_lambdas[function.name] = function
+        except Exception as e:
+            raise(e)
             #TODO: Log exception
             StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
@@ -71,16 +91,29 @@ class Manager:
         except Exception as e:
             #TODO: Log exception
             raise(e) 
+    
+    def list_registered_functions(self, stack:str='') -> List[FunctionModel]:
+        """
+        List the registered functions in the manager.
+        Optionally limit the results to a given application.
+        #TODO: Add support for applications within the manager later
+
+        @app: Application name for which to list the registered functions
+        """
+        try:
+            registered_functions = self._backend.read_functions(stack)
+            return list(registered_functions)
+        except Exception as e:
+            raise(e)
 
     # SCHEDULE_________________________
-    def register_schedule(self, schedule: ScheduleItem) -> StatusCode:
+    def register_schedule(self, schedule: Models.SCHEDULE) -> StatusCode:
         """
         Register an execution schedule to associate it with any
         function as trigger.
         """
         try:
-            schedule_item = ScheduleModel(schedule)
-            schedule_item.save()
+            schedule.save()
         except:
             #TODO: Log exception
             return StatusCode.DB_WRITE_ERROR
@@ -109,7 +142,7 @@ class Manager:
             raise e 
 
     # TRIGGER_________________________
-    def register_trigger(self, trigger: TriggerItem) -> StatusCode:
+    def register_trigger(self, trigger: Models.TRIGGER) -> StatusCode:
         """
         Register a trigger for a function from a connected
         service. 
@@ -117,8 +150,7 @@ class Manager:
         Can be any type of trigger supported by lambda
         """
         try:
-            trigger_item = TriggerModel(trigger)
-            trigger_item.save()
+            trigger.save()
         except:
             #TODO: Log exception
             return StatusCode.DB_WRITE_ERROR
@@ -135,7 +167,7 @@ class Manager:
            return StatusCode.DB_WRITE_ERROR 
         return StatusCode.SUCCESS
 
-    def list_triggers(self) -> Iterator[TriggerModel]:
+    def list_triggers(self) -> Iterator[Models.TRIGGER]:
         """
         List the registered triggers within the orchestrator.
         """

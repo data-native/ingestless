@@ -78,6 +78,6 @@ def reset(
         typer.secho("Deleting application state", fg='green')
         config._reset_application()
         typer.secho("Dropping application tables", fg='green')
-        config._reset_database()
+        reset_status = config._reset_database()
         
     typer.Exit(0)

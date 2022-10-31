@@ -1,9 +1,10 @@
+from enum import Enum
 from platform import system
 import configparser
 import logging 
 
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute 
+from pynamodb.attributes import UnicodeAttribute, BooleanAttribute, UTCDateTimeAttribute, JSONAttribute
 
 parser = configparser.ConfigParser()
 parser.read('./manager/config.ini')
@@ -24,8 +25,8 @@ class FunctionModel(Model):
         table_name = FUNCTION_TABLE_NAME 
         host = HOST 
     name = UnicodeAttribute(hash_key=True) 
-    arn = UnicodeAttribute()
-    schedule = UnicodeAttribute()
+    attributes = JSONAttribute()
+    schedule = UnicodeAttribute(null=True)
 
 class TriggerModel(Model):
     """
@@ -36,7 +37,6 @@ class TriggerModel(Model):
         host = HOST 
     name = UnicodeAttribute(hash_key=True)
     linked_element = UnicodeAttribute(range_key=True)
-    trigger_element_arn = UnicodeAttribute()
     
 class ScheduleModel(Model):
     """
@@ -47,5 +47,9 @@ class ScheduleModel(Model):
         host = HOST 
     name = UnicodeAttribute(hash_key=True)
     cron = UnicodeAttribute()
-    
-    
+
+class Models(Enum):
+    """Defines the list of models for import in other modules"""
+    FUNCTION = FunctionModel
+    SCHEDULE = ScheduleModel
+    TRIGGER = TriggerModel 
