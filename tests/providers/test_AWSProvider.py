@@ -1,7 +1,9 @@
 import pytest
 
 from typer.testing import CliRunner
+from typing import List
 
+from manager.models import FunctionModel
 from manager.database import DatabaseHandler
 from manager.enums import StatusCode
 from manager.manager import Manager
@@ -35,5 +37,5 @@ def test_switch_profile(AwsProvider):
 # TEST_Function_handler
 def test_list_functions(AwsProvider):
     functions = AwsProvider.list_functions()
-    assert isinstance(functions, dict)
-    assert 'Functions' in functions
+    assert isinstance(functions, list)
+    assert all([isinstance(function, dict) for function in functions])

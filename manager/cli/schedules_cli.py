@@ -1,9 +1,11 @@
 import typer
 import pickle
+from typing import List
 from cron_converter import Cron
 from tabulate import tabulate
 
 from manager.manager import Manager
+from manager.models import ScheduleModel
 from manager.types import ScheduleItem
 
 schedule_app = typer.Typer()
@@ -49,7 +51,7 @@ def schedule_create():
             typer.secho(f"Creating schedule {schedule}", fg="green")
 
 @schedule_app.command("list")
-def schedule_list_all():
+def schedule_list_all() -> List[ScheduleModel]:
     """
     Displays all registered schedules for management
     """
@@ -60,7 +62,22 @@ def schedule_list_all():
     typer.secho(f"Schedule Name | CRON | # of associated functions")
     for schedule in schedules:
         cron = pickle.loads(schedule.cron)
-        typer.secho(f"{schedule.name} | {cron } | {schedule.associated}")
+        typer.secho(f"{schedule.name} | { cron } | {schedule.associated}")
+    return schedules
+
+@schedule_app.command("delete") 
+def remove_schedule(
+):
+    """
+    Deletes a registered schedule from the system
+    """
+    schedules = schedule_list_all()
+
+    schedule_id = typer.prompt("Which schedules to delete?", type=int)
+    selected_schedule = schedules[schedule_id]
+    
+    if typer.confirm(f"You sure you want to remove {selected_schedule.name}? y/N"):
+        manager.unregister_schedule(selected_schedule.name)
 
 @schedule_app.command("apply") 
 def apply_schedule_to_function():

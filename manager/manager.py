@@ -1,8 +1,10 @@
 import logging
+import pickle
 from configparser import ConfigParser
-from manager.enums import StatusCode
+from sre_constants import SUCCESS
+from manager.enums import StatusCode, RequestModels
 from manager.database import DatabaseHandler
-from typing import Iterator, List, Dict, Any, Optional
+from typing import Iterator, List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 
 from manager.enums import Provider
@@ -26,6 +28,7 @@ class Manager:
 
     def __init__(self):
         self.models =  Models
+        self.requests = RequestModels
         self._registered_lambdas = {} 
         self._config_manager = ConfigManager()
         self._backend = DatabaseHandler() 
@@ -77,7 +80,7 @@ class Manager:
             StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
 
-    def list_functions(self, stack: str='') -> List[dict]:
+    def list_functions(self, stack: str='') -> Optional[List[dict]]:
         """
         Lists the available lambda functions in a given account. 
         Optionally filter by deployment stack, accountId.
@@ -115,9 +118,9 @@ class Manager:
         try:
             schedule.save()
         except Exception as e:
-            #TODO: Log exception
-            raise(e)
-            return StatusCode.DB_WRITE_ERROR
+            #TODO: Handle exception 
+            logging.exception(e)
+            return  StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
     
     def unregister_schedule(self, schedule_name: str ):
@@ -125,8 +128,11 @@ class Manager:
         Removes a schedule from the system.
         """
         try:
-            ScheduleModel.name.delete(schedule_name)
-        except:
+            schedule = ScheduleModel.get(schedule_name)
+            schedule.delete()
+            logging.debug("Removed")
+        except Exception as e:
+            raise(e)                
             #TODO: Log exception
             StatusCode.DB_WRITE_ERROR
         StatusCode.SUCCESS
@@ -141,6 +147,19 @@ class Manager:
         except Exception as e:
             #TODO: Log exception
             raise e 
+    
+    def schedule_function(self, schedule: ScheduleModel, function_hk: str, function_sk: str = '') -> StatusCode:
+        """
+        Applies a registered schedule to the function
+        """
+        try:
+            function = FunctionModel.get(function_hk)
+            function.update(actions=[self.models.FUNCTION.schedule.set(pickle.dumps(schedule))])
+            return StatusCode.SUCCESS 
+        except Exception as e:
+            logging.exception("Exception updating function with schedule", e)
+            return StatusCode.DB_WRITE_ERROR
+
 
     # TRIGGER_________________________
     def register_trigger(self, trigger: Models.TRIGGER) -> StatusCode:

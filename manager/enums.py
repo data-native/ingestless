@@ -1,7 +1,11 @@
 from enum import Enum, auto
+from manager.types import FunctionItem, ScheduleItem, TriggerItem
 
 # Supported Providers
-
+class RequestModels(Enum):
+    FUNCTION = FunctionItem
+    SCHEDULE = ScheduleItem
+    TRIGGER = TriggerItem
 
 class Provider(Enum):
     AWS = 1

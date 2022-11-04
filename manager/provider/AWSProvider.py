@@ -5,7 +5,8 @@ with the AWS services.
 
 """
 import boto3
-from typing import Optional, List
+from manager.models import FunctionModel, TriggerModel, ScheduleModel
+from typing import Optional, List, Dict
 from manager.enums import Service
 from manager.provider.abstract_provider import BackendProvider
 
@@ -63,7 +64,7 @@ class AWSProvider(BackendProvider):
             self._initialize_client(service)
 
     # Functions____________
-    def list_functions(self) -> List[dict]:
+    def list_functions(self) -> List[Dict]:
         functions = self.get_client(Service.Function).list_functions()
         return functions['Functions']
         

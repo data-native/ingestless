@@ -2,6 +2,7 @@ import json
 from typing import Iterable
 import pytest
 
+from cron_converter import Cron
 from typer.testing import CliRunner
 
 from manager.database import DatabaseHandler
@@ -90,27 +91,21 @@ def test_register_schedule(local_manager):
     schedule = local_manager.models.SCHEDULE('test_schedule', cron='* * * * *')
     local_manager.register_schedule(schedule)
 
-@pytest.mark.parametrize(
-    "schedule_name, expected",
-    [
-        pytest.param(
-            "testschedule",
-            {
-                "name": "testschedule"
-            }
-        )
-    ]
-)
-def test_unregister_schedule(local_manager, schedule_name, expected):
+def test_unregister_schedule(local_manager):
+    schedule_name = 'test'
     removed_schedule = local_manager.unregister_schedule(schedule_name)
 
 def test_schedule_function(local_manager: Manager):
-    False
-    
+    function = local_manager.models.FUNCTION('test', attributes={})
+    local_manager.register_function(function)
+    cron = Cron('* * * * *', {})
+    schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
+    schedule_status = local_manager.schedule_function(schedule, function_hk='test')
+    assert schedule_status == StatusCode.SUCCESS
 
 def test_list_schedules(local_manager):
     schedules = local_manager.list_schedules()
-    
+
 def test_register_trigger(local_manager):
     trigger = local_manager.register_trigger()
 
