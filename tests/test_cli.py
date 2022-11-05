@@ -14,3 +14,6 @@ def test_function_create():
 def test_function_list_registered():
     result = runner.invoke(app, ["functions", "list-registered"])
     assert result.exit_code == 0
+
+def test_function_schedule():
+    result = runner.invoke(app, ['functions', 'schedule'])

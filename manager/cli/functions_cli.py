@@ -182,18 +182,19 @@ def display_schedules(schedules: List[ScheduleModel]) -> StatusCode:
     @options: A 
     """
     new_line = '\n'
+    result_table = []
+    headers= ["idx", "Name", "Schedule", "Associated functions"]
     if not schedules:
         typer.secho("No schedules registered. Please register a new schedule now.")
         return StatusCode.DB_READ_ERROR
-    typer.secho(f"{new_line}Registered Schedules", fg='blue')
-    typer.secho(f"# | Name | Schedule | Associated functions", fg='blue')
-    
-    for idx, schedule in enumerate(schedules):
+    for schedule in schedules:
         name = schedule.name
         cron = pickle.loads(schedule.cron)
         associated = schedule.associated
-        typer.secho(f"{idx} - {name} | {cron} | {associated}")
-    
+        result_table.append([ name, cron.to_string(), associated])
+    # Display table
+    typer.secho(f"{new_line}Registered Schedules", fg='blue')
+    typer.echo(tabulate(result_table, headers=headers, showindex='always')) 
     return StatusCode.SUCCESS
 
 def display_selection(options: Dict):
@@ -210,11 +211,11 @@ def display_selection(options: Dict):
     """
     new_line = '\n'
     typer.secho(f"{new_line}{options['intro']}{new_line}", fg="blue")
-    for idx, (option, attrs) in enumerate(options['choices'].items()):
-        typer.secho(f'{idx}:: {option}')
+    typer.echo(tabulate([[option] for option in options['choices']],headers=['idx', 'Function Name'], showindex='always'))
+    # for idx, (option, attrs) in options['choices'].items():
+        # typer.secho(f'{idx}:: {option}')
     selection = typer.prompt(f"{new_line}>> {options['prompt']}:  ", type=options.get('type', str))
     print("Selection taken: ", selection)
-    logging.debug('User_prompt_input: Select scheduling method: ', selection)
     return selection
 
 def display_functions(attributes:List[str]=[]) -> List[dict]:
@@ -239,7 +240,7 @@ def display_functions(attributes:List[str]=[]) -> List[dict]:
         if attributes:
             typer.secho(f"Applied {len(attributes)} column filters: {', '.join(attributes)}", fg='green')
             typer.secho(f"Available attributes: {set(available_resources).difference(set(attributes))} {new_line}")
-        typer.echo(tabulate(result_table, headers='keys'))
+        typer.echo(tabulate(result_table, headers='keys', showindex='always'))
         return functions
     return []
 

@@ -78,6 +78,9 @@ def test_list_functions(local_manager):
     assert isinstance(functions, Iterable)
     assert isinstance(functions[0], dict)
 
+def test_list_options():
+    raise NotImplementedError
+
 def test_list_registered_functions(local_manager: Manager):
     #TODO: Extend to create temporary tests in temp local db
     # local_manager.register_function(local_manager.models.FUNCTION("test", ))
