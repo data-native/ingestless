@@ -148,6 +148,11 @@ class Manager:
             #TODO: Log exception
             raise e 
     
+    def get_schedule(self, schedule_name: str) -> ScheduleModel:
+        """Retrieves the model for the schedule by name"""
+        schedule = ScheduleModel.get(schedule_name)
+        return schedule
+
     def schedule_function(self, schedule: ScheduleModel, function_hk: str, function_sk: str = '') -> StatusCode:
         """
         Applies a registered schedule to the function

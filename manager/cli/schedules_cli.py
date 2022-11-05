@@ -37,14 +37,15 @@ def schedule_create():
                 # Create output for confirmation
                 schedule_print = zip(['minute', 'hour', 'day', 'month', 'day of week', 'year'][:len(cron.to_list())], cron.to_list())
                 confirmed = typer.confirm(f"You want to schedule for:\n{tabulate(schedule_print)}")
-                try:
-                    schedule = manager.models.SCHEDULE(name, cron=pickle.dumps(cron))
-                    manager.register_schedule(schedule)
-                except Exception as e:
-                    typer.secho(f'Unable to register schedule: {e}', fg='red')
-                    typer.Exit(1)
-                typer.secho(f'Successfully created schedule {name}: {cron}', fg='green')
-                typer.Exit(0)
+                if confirmed:
+                    try:
+                        schedule = manager.models.SCHEDULE(name, cron=pickle.dumps(cron))
+                        manager.register_schedule(schedule)
+                    except Exception as e:
+                        typer.secho(f'Unable to register schedule: {e}', fg='red')
+                        typer.Exit(1)
+                    typer.secho(f'Successfully created schedule {name}: {cron}', fg='green')
+                    typer.Exit(0)
             except ValueError:
                 typer.secho(f"The cron: {schedule} is in an incorrect format. Please provide again.")
 
@@ -78,13 +79,3 @@ def remove_schedule(
     
     if typer.confirm(f"You sure you want to remove {selected_schedule.name}? y/N"):
         manager.unregister_schedule(selected_schedule.name)
-
-@schedule_app.command("apply") 
-def apply_schedule_to_function():
-    """
-    Sets a schedule on a given function
-    """
-    
-    # List all available schedules
-
-    # Load

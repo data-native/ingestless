@@ -112,6 +112,7 @@ def associate_schedule_to_function(
     a selection of all functions that should have a given schedule set.
     """
     new_line = '\n'
+
     # List all functions
     typer.secho(f"{new_line}Schedule applications{new_line}___________________", fg='blue')
     functions = manager.list_registered_functions()
@@ -147,10 +148,10 @@ def associate_schedule_to_function(
             if not schedules:
                 typer.secho('No registered schedules to choose from. Please define a new one')
             # display existing schedules
-            schedule_display_status = display_schedules(schedules=schedules)
-            if schedule_display_status == StatusCode.SUCCESS:
-                # Make a selection which one to apply
-                schedule = typer.prompt("Select a schedule to apply: ", type=int)
+            display_schedules(schedules=schedules)
+            # Make a selection which one to apply
+            schedule_idx = typer.prompt("Select a schedule to apply: ", type=int)
+            schedule = schedules[schedule_idx]
         elif method == 1 : 
             # Create a Schedule object with new cron
             registration_status = None
@@ -184,8 +185,13 @@ def display_schedules(schedules: List[ScheduleModel]) -> StatusCode:
         typer.secho("No schedules registered. Please register a new schedule now.")
         return StatusCode.DB_READ_ERROR
     typer.secho(f"{new_line}Registered Schedules", fg='blue')
-    for schedule in schedules:
-        typer.secho(f"{schedule.name} | {schedule.cron} | {schedule.associated}")
+    typer.secho(f"# | Name | Schedule | Associated functions", fg='blue')
+    
+    for idx, schedule in enumerate(schedules):
+        name = schedule.name
+        cron = pickle.loads(schedule.cron)
+        associated = schedule.associated
+        typer.secho(f"{idx} - {name} | {cron} | {associated}")
     
     return StatusCode.SUCCESS
 
@@ -246,11 +252,20 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
     # TODO: Display results as table
     scope = "" if app == '' else f"for {app}"
     title = f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(registered_functions)} Functions {scope}"
-    header= " # | App | Name | FunctionHandler | Runtime "
+    header= " # | App | Name | FunctionHandler | Runtime | Schedule"
     typer.secho(title, fg='blue')
     typer.secho(header, fg='blue')
     # Display each result in newline with index for selection
     typer.secho('-'* len(header), fg='blue')
     for idx, function in enumerate(registered_functions):
-        typer.secho(f"{idx}) {function.app} |  {function.name} | {function.attributes.get('Handler', 'Not set')} | {function.attributes.get('Runtime', 'not set')}", )
+        cron = ''
+        if function.schedule:
+            schedule = pickle.loads(function.schedule)
+            if schedule.cron and isinstance(schedule.cron, bytes):
+                cron_converter = pickle.loads(schedule.cron)
+                cron = cron_converter.to_string()
+        else:
+            cron = "-"         
+        typer.secho(f"{idx}) {function.app} |  {function.name} | {function.attributes.get('Handler', 'Not set')} | {function.attributes.get('Runtime', 'Not Set')} | {cron}", )
+
     return registered_functions
