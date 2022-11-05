@@ -10,6 +10,7 @@ import logging
 import typer
 import pickle
 from cron_converter import Cron
+from tabulate import tabulate
 
 from manager.enums import StatusCode
 from manager.manager import Manager
@@ -250,14 +251,14 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
             # typer.Exit(0)
             # return
     # TODO: Display results as table
+    headers = ["#", "App","Name","FunctionHandler", "Runtime", "[mhdWmY]"]
+    result_table = []
+    
     scope = "" if app == '' else f"for {app}"
     title = f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(registered_functions)} Functions {scope}"
-    header= " # | App | Name | FunctionHandler | Runtime | Schedule"
     typer.secho(title, fg='blue')
-    typer.secho(header, fg='blue')
     # Display each result in newline with index for selection
-    typer.secho('-'* len(header), fg='blue')
-    for idx, function in enumerate(registered_functions):
+    for function in registered_functions:
         cron = ''
         if function.schedule:
             schedule = pickle.loads(function.schedule)
@@ -266,6 +267,6 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
                 cron = cron_converter.to_string()
         else:
             cron = "-"         
-        typer.secho(f"{idx}) {function.app} |  {function.name} | {function.attributes.get('Handler', 'Not set')} | {function.attributes.get('Runtime', 'Not Set')} | {cron}", )
-
+        result_table.append([function.app, function.name, function.attributes.get('Handler', 'Not set'), function.attributes.get('Runtime', 'Not Set'), cron])
+    typer.echo(tabulate(result_table, headers=headers, showindex='always'))
     return registered_functions
