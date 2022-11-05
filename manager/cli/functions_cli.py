@@ -221,6 +221,7 @@ def display_functions(attributes:List[str]=[]) -> List[dict]:
     """Displays a the list of available functions to the cli"""
     new_line='\n'
     results = []
+    result_table = []
     functions = manager.list_functions()
     if functions:
         # Conditionally filter based on set keys
@@ -231,8 +232,14 @@ def display_functions(attributes:List[str]=[]) -> List[dict]:
                 typer.secho(f"The filter set did not return any repsonses: Please use the following arguments only:{new_line} {new_line.join(available_resources)}", fg='red')
                 typer.Exit(0)
                 return []
-        for idx, function in enumerate(results):
-            typer.secho(f"{idx}) {function['FunctionName']}: {json.dumps(function, indent=2)}", fg='green')
+        for function in results:
+            result_table.append(function)
+            # typer.secho(f"{idx}) {function['FunctionName']}: {json.dumps(function, indent=2)}", fg='green')
+        typer.secho(f"{new_line}Total Available Functions: {len(functions)}", fg='blue')
+        if attributes:
+            typer.secho(f"Applied {len(attributes)} column filters: {', '.join(attributes)}", fg='green')
+            typer.secho(f"Available attributes: {set(available_resources).difference(set(attributes))} {new_line}")
+        typer.echo(tabulate(result_table, headers='keys'))
         return functions
     return []
 
