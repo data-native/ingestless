@@ -62,8 +62,11 @@ def test_enable_rule(AwsProvider):
 def test_list_rules_by_target(AwsProvider):
     raise NotImplementedError
 
-def test_list_rules(AwsProvider):
-    raise NotImplementedError
+def test_list_rules(AwsProvider: AWSProvider):
+    response = AwsProvider.list_rules()
+    rules = response['Rules']
+    assert isinstance(rules, list)
+    assert all([name in rules[0] for name in ['Name', 'Arn', 'State', 'Description', 'ScheduleExpression', 'EventBusName']])
 
 def test_list_targets_by_rule(AwsProvider):
     raise NotImplementedError

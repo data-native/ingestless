@@ -108,7 +108,7 @@ class AWSProvider(BackendProvider):
         Lists all Bus rules.
         Can provide a prefix to filter the result set.
         """
-        response = self._clients[Services.ServiceBus].list_rules(NamePrefix=prefix)
+        response = self.get_client(Services.ServiceBus).list_rules()
         return response
     
     def list_targets_by_rule(self, rule:str):
@@ -157,7 +157,8 @@ class AWSProvider(BackendProvider):
     def put_target(self, 
         rule: str,
         type: Services,
-        target
+        #TODO:  Add typehint for target
+        target 
     ):
         """
         Supports the association of a rule with a specified Service type
