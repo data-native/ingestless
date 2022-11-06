@@ -161,8 +161,12 @@ def test_list_targets_by_rule(AwsProvider: AWSProvider):
     targets = response['Targets']
     assert all([n in targets[0] for n in ['Id', 'Arn']])
 
-def test_list_rule_by_target(AwsProvider: AWSProvider):
+def test_list_rules_by_target(AwsProvider: AWSProvider):
     """
     Can list all rules triggering a specific target
     """
-    target_name = ''
+    targetArn ='arn:aws:lambda:ap-southeast-1:425614128352:function:datanative-getArticleByIdFunction-XzJjDB84jbfp' 
+    response = AwsProvider.list_rules_by_target(targetArn)
+    assert 'RuleNames' in response
+    assert isinstance(response['RuleNames'], list)
+    assert 'Testrule' in response['RuleNames']

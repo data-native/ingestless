@@ -105,7 +105,9 @@ class AWSProvider(BackendProvider):
         """
         Lists the rules for the specified target.
         """
-        # 
+        response = self.get_client(Services.ServiceBus).list_rule_names_by_target(TargetArn=targetArn)
+        return response
+
     def list_rules(self, prefix:str=''):
         """
         Lists all Bus rules.
