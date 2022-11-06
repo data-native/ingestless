@@ -67,7 +67,66 @@ class AWSProvider(BackendProvider):
     def list_functions(self) -> List[Dict]:
         functions = self.get_client(Service.Function).list_functions()
         return functions['Functions']
-        
+    
+    # EVENTS__________________-
+    def describe_rule(self, name: str):
+        """
+        Retrieves details of a rule
+        """
+        response = self.clients[Service.ServiceBus].describe_rule(name=name)
+
+    def disable_rule(self, name:str):
+        """
+        Disables a rule
+        """
+        response = self.clients[Service.ServiceBus].disable_rule(name)
+    
+    def enable_rule(self, name:str):
+        """
+        Enables a given rule
+        """
+        response = self.clients[Service.ServiceBus].enable_rule(name)
+    
+    def list_rules_by_target(self, targetArn:str):
+        """
+        Lists the rules for the specified target.
+        """
+        # 
+    def list_rules(self, prefix:str=''):
+        """
+        Lists all Bus rules.
+        Can provide a prefix to filter the result set.
+        """
+        response = self.clients[Service.ServiceBus].list_rules(NamePrefix=prefix)
+        return response
+    
+    def list_targets_by_rule(self, rule:str):
+        """
+        Lists all targets of the given rule:
+        @rule: (str) Name of the rule to inspect
+        """
+        response = self.clients[Service.ServiceBus].list_targets_by_rule()
+    
+    def put_permissions(self, action: str, principal: str, statementId: str, condition: dict):
+        """
+        Puts a permission to the specified AWS account to put 
+        events to your account. 
+        """
+        response = self.clients[Service.ServiceBus].put_permissions(Action=action, Principal=principal, StatementId=statementId, Condition=condition)
+        return response
+    
+    def put_rule(self):
+        """
+        Add or update a given rule which is set active on default.
+        """
+        raise NotImplementedError
+
+    def put_targets(self):
+        """
+        Add or update a given rule which is set active on default.
+        """
+        raise NotImplementedError
+
 # class AzureProvider(BackendProvider):
     # pass
 
