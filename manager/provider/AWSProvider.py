@@ -5,10 +5,15 @@ with the AWS services.
 
 """
 import boto3
+import logging
 from manager.models import FunctionModel, TriggerModel, ScheduleModel
 from typing import Optional, List, Dict
+from botocore.client import BaseClient as BotoClient
+from botocore import exceptions as BotoCoreExceptions
+
 from manager.enums import Services
 from manager.provider.abstract_provider import BackendProvider
+
 
 class AWSProvider(BackendProvider):
     """
@@ -51,7 +56,7 @@ class AWSProvider(BackendProvider):
         return super().get_region()
 
     # Client__________
-    def get_client(self, service: Services):
+    def get_client(self, service: Services) -> BotoClient:
         """Retrieves the correct native service for the framework service"""
         self._ensure_client(service)
         return self._clients[service]        
@@ -59,7 +64,7 @@ class AWSProvider(BackendProvider):
     def _initialize_client(self, service: Services) -> None:
         self._clients[service] = boto3.client(self.service_switch[service])
 
-    def _ensure_client(self, service: Services): 
+    def _ensure_client(self, service: Services) -> None: 
         if not service in self._clients:
             self._initialize_client(service)
 
@@ -73,7 +78,8 @@ class AWSProvider(BackendProvider):
         """
         Retrieves details of a rule
         """
-        response = self._clients[Services.ServiceBus].describe_rule(name=name)
+        response = self.get_client(Services.ServiceBus).describe_rule(name=name)
+        # response = self._clients[Services.ServiceBus].describe_rule(name=name)
 
     def disable_rule(self, name:str):
         """
@@ -115,10 +121,16 @@ class AWSProvider(BackendProvider):
         response = self._clients[Services.ServiceBus].put_permissions(Action=action, Principal=principal, StatementId=statementId, Condition=condition)
         return response
     
-    def put_rule(self, rule: dict):
+    def put_rule(self, rule: dict) -> str:
         """
         Add or update a given rule which is set active on default.
         """
+        try:
+            response = self.get_client(Services.ServiceBus).put_rule(**rule)
+            return response['RuleArn'] 
+        except BotoCoreExceptions.ClientError as client_e:
+            logging.debug(f"event put_rule::ClientError: {client_e}")
+            raise(client_e)
 
     def put_targets(self):
         """

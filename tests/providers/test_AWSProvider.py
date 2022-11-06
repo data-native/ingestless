@@ -74,11 +74,14 @@ def test_put_permissions(AwsProvider):
 def test_put_rule(AwsProvider):
     rule = {
         'Name': 'Testrule',
-        'ScheduleExpression': 'cron(* * * * *)',
+        'ScheduleExpression': 'rate(5 minutes)',
         'State': 'DISABLED',
         'Description': 'A sample rule',
     }
-    AwsProvider.put_rule(rule)
+    response: str = AwsProvider.put_rule(rule)
+    assert isinstance(response, str)
+    assert response.startswith('arn:aws')
+    assert response.endswith(rule['Name'])
 
 def test_put_targets(AwsProvider):
     raise NotImplementedError
