@@ -150,3 +150,19 @@ def test_disable_rule(AwsProvider: AWSProvider):
     
     rule = AwsProvider.describe_rule(name=rule_name)
     assert rule['State'] == 'DISABLED'
+
+def test_list_targets_by_rule(AwsProvider: AWSProvider):
+    """
+    Can list all targets associated with a given rule
+    """
+    rule_name = 'Testrule'
+    response = AwsProvider.list_targets_by_rule(rule=rule_name)
+    assert 'Targets' in response
+    targets = response['Targets']
+    assert all([n in targets[0] for n in ['Id', 'Arn']])
+
+def test_list_rule_by_target(AwsProvider: AWSProvider):
+    """
+    Can list all rules triggering a specific target
+    """
+    target_name = ''

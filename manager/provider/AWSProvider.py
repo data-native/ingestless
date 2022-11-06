@@ -119,7 +119,8 @@ class AWSProvider(BackendProvider):
         Lists all targets of the given rule:
         @rule: (str) Name of the rule to inspect
         """
-        response = self._clients[Services.ServiceBus].list_targets_by_rule()
+        response = self.get_client(Services.ServiceBus).list_targets_by_rule(Rule=rule)
+        return response
     
     def put_permissions(self, action: str, principal: str, statementId: str, condition: dict):
         """
