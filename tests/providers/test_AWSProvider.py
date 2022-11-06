@@ -138,9 +138,15 @@ def test_enable_rule(AwsProvider: AWSProvider):
     assert response['ResponseMetadata']['HTTPStatusCode'] == 200
     
     rule = AwsProvider.describe_rule(name=rule_name)
-    rule['State'] == 'ENABLED'
+    assert rule['State'] == 'ENABLED'
 
 def test_disable_rule(AwsProvider: AWSProvider):
     """
     Ensure you can disable an enabled rule
     """
+    rule_name = 'Testrule'
+    response = AwsProvider.disable_rule(name=rule_name)
+    assert response['ResponseMetadata']['HTTPStatusCode'] == 200
+    
+    rule = AwsProvider.describe_rule(name=rule_name)
+    assert rule['State'] == 'DISABLED'
