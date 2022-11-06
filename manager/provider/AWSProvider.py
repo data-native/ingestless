@@ -91,13 +91,15 @@ class AWSProvider(BackendProvider):
         """
         Disables a rule
         """
-        response = self._clients[Services.ServiceBus].disable_rule(name)
+        response = self.get_client(Services.ServiceBus).disable_rule(name)
+        return response 
     
     def enable_rule(self, name:str):
         """
         Enables a given rule
         """
-        response = self._clients[Services.ServiceBus].enable_rule(name)
+        response = self.get_client(Services.ServiceBus).enable_rule(Name=name)
+        return response
     
     def list_rules_by_target(self, targetArn:str):
         """

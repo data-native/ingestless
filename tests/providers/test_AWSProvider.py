@@ -129,3 +129,18 @@ def test_describe_rule(AwsProvider: AWSProvider):
     assert isinstance(rule, dict)
     assert all([n in rule for n in ['Name', 'Arn', 'ScheduleExpression', 'State', 'Description', 'EventBusName', 'CreatedBy']])
         
+def test_enable_rule(AwsProvider: AWSProvider):
+    """
+    Ensure you can enable a disabled rule
+    """
+    rule_name = 'Testrule'
+    response = AwsProvider.enable_rule(name=rule_name)
+    assert response['ResponseMetadata']['HTTPStatusCode'] == 200
+    
+    rule = AwsProvider.describe_rule(name=rule_name)
+    rule['State'] == 'ENABLED'
+
+def test_disable_rule(AwsProvider: AWSProvider):
+    """
+    Ensure you can disable an enabled rule
+    """
