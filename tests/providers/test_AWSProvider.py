@@ -119,4 +119,13 @@ def test_put_target_function(AwsProvider: AWSProvider):
     )
     assert response
 
+def test_describe_rule(AwsProvider: AWSProvider):
+    """
+    Ensures details about a rule can be retrieved 
+    by name of the given rule on the selected ServiceBus
+    """
+    rule_name = 'Testrule'
+    rule = AwsProvider.describe_rule(name=rule_name)
+    assert isinstance(rule, dict)
+    assert all([n in rule for n in ['Name', 'Arn', 'ScheduleExpression', 'State', 'Description', 'EventBusName', 'CreatedBy']])
         

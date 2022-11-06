@@ -79,11 +79,12 @@ class AWSProvider(BackendProvider):
         return function
     
     # EVENTS__________________-
-    def describe_rule(self, name: str):
+    def describe_rule(self, name: str) -> dict:
         """
         Retrieves details of a rule
         """
-        response = self.get_client(Services.ServiceBus).describe_rule(name=name)
+        response = self.get_client(Services.ServiceBus).describe_rule(Name=name)
+        return response
         # response = self._clients[Services.ServiceBus].describe_rule(name=name)
 
     def disable_rule(self, name:str):
