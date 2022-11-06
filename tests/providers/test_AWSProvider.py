@@ -83,5 +83,37 @@ def test_put_rule(AwsProvider):
     assert response.startswith('arn:aws')
     assert response.endswith(rule['Name'])
 
-def test_put_targets(AwsProvider):
-    raise NotImplementedError
+def test_put_targets(AwsProvider: AWSProvider):
+    """
+    Ensures the following targets can be added
+    as execution targets for a defined schedule
+    rule in EventBus
+    
+    * AWS Lambda, AWS Step Functions, AWS Batch Job, SNS, SQS
+    """
+
+    functions = AwsProvider.list_functions()
+    rule_name = 'Testrule'
+    targets = []
+    response = AwsProvider.put_targets(
+        rule=rule_name,
+        targets=targets,
+    )
+    return response
+
+def test_put_target_function(AwsProvider: AWSProvider):
+    """
+    Tests that a function target can be associated
+    to a given rule on the ServiceBus 
+    """
+    from manager.types import EventTargetItem
+    rule_name="Testrule"
+    functions = AwsProvider.list_functions()
+    response = AwsProvider.put_target(
+        rule=rule_name,
+        type=Services.Function,
+        target=functions[0]
+    )
+    assert response
+
+        

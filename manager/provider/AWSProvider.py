@@ -12,6 +12,7 @@ from botocore.client import BaseClient as BotoClient
 from botocore import exceptions as BotoCoreExceptions
 
 from manager.enums import Services
+from manager.types import EventTargetItem
 from manager.provider.abstract_provider import BackendProvider
 
 
@@ -73,6 +74,10 @@ class AWSProvider(BackendProvider):
         functions = self.get_client(Services.Function).list_functions()
         return functions['Functions']
     
+    def describe_function(self, name: str) -> Dict:
+        function = self.get_client(Services.Function).describe_function(name)
+        return function
+    
     # EVENTS__________________-
     def describe_rule(self, name: str):
         """
@@ -121,7 +126,7 @@ class AWSProvider(BackendProvider):
         response = self._clients[Services.ServiceBus].put_permissions(Action=action, Principal=principal, StatementId=statementId, Condition=condition)
         return response
     
-    def put_rule(self, rule: dict) -> str:
+    def put_rule(self, rule: dict):
         """
         Add or update a given rule which is set active on default.
         """
@@ -132,12 +137,50 @@ class AWSProvider(BackendProvider):
             logging.debug(f"event put_rule::ClientError: {client_e}")
             raise(client_e)
 
-    def put_targets(self):
+     
+    def put_targets(self,
+        rule: str,
+        targets: List[EventTargetItem],
+    ):
         """
         Add or update a given rule which is set active on default.
         """
-        raise NotImplementedError
+        try:
+            response = self.get_client(Services.ServiceBus).put_targets(
+                Rule=rule,
+                Targets=targets
+                )
+        except Exception as e:
+            logging.debug(f"AWSProvider::put_targets: Error {e}")
+            raise(e) 
+    
+    def put_target(self, 
+        rule: str,
+        type: Services,
+        target
+    ):
+        """
+        Supports the association of a rule with a specified Service type
+        by retrieving the details and filling in the request body message.
+        """
+        response = None
+        if type == Services.Function:
+            # Fill lambda details
+            # TODO: Use predefined Role to trigger the target lambda function
+            function_target = EventTargetItem(
+                Id=target['FunctionName'],
+                Arn= target['FunctionArn']
+            )
+            response = self.get_client(Services.ServiceBus).put_targets(
+                Rule=rule,
+                Targets=[function_target.__dict__]
+            )
+        if type == Services.StateMachine:
+            # Fill lambda details
+            raise NotImplementedError
+        return response
 
+    
 # class AzureProvider(BackendProvider):
     # pass
 

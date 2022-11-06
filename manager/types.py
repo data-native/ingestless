@@ -1,3 +1,4 @@
+from typing import List, Dict
 from dataclasses import dataclass
 
 @dataclass
@@ -27,3 +28,18 @@ class TriggerItem:
     """
     name: str
     source: str
+
+# Request items used in Provider Class
+@dataclass
+class EventTargetItem:
+    """
+    A request item send definition used in the
+    put_targets call to the AWS Backend provider
+    """
+    Id: str
+    Arn: str
+    # RoleArn: str = ''
+    # Input: str = ''
+    # InputPath: str = ''
+    # InputTransformer: = {}
+
