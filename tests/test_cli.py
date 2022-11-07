@@ -16,4 +16,16 @@ def test_function_list_registered():
     assert result.exit_code == 0
 
 def test_function_schedule():
-    result = runner.invoke(app, ['functions', 'schedule'])
+    result = runner.invoke(app, ['functions', 'schedule'], input='0\n')
+
+def test_remove_schedule():
+    runner.invoke(app, ['schedules', 'create'], input='testschedule\n5 * * * *\ny\n')
+    result = runner.invoke(app, ['schedules', 'remove'], input='0\n')
+    assert result.exit_code == 0
+
+def test_function_remove():
+    # Setup
+    runner.invoke(app, ['functions', 'register'], input='0\n')
+    # Call functions
+    result = runner.invoke(app, ['functions', 'remove'], input='0\n')
+    assert result.exit_code == 0

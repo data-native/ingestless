@@ -142,7 +142,6 @@ class AWSProvider(BackendProvider):
         except BotoCoreExceptions.ClientError as client_e:
             logging.debug(f"event put_rule::ClientError: {client_e}")
             raise(client_e)
-
      
     def put_targets(self,
         rule: str,
@@ -156,10 +155,11 @@ class AWSProvider(BackendProvider):
                 Rule=rule,
                 Targets=targets
                 )
+            return response
         except Exception as e:
             logging.debug(f"AWSProvider::put_targets: Error {e}")
             raise(e) 
-    
+
     def put_target(self, 
         rule: str,
         type: Services,

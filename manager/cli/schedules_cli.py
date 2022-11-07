@@ -66,7 +66,7 @@ def schedule_list_all() -> List[ScheduleModel]:
         typer.secho(f"{schedule.name} | { cron } | {schedule.associated}")
     return schedules
 
-@schedule_app.command("delete") 
+@schedule_app.command("remove") 
 def remove_schedule(
 ):
     """

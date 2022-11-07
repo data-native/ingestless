@@ -4,15 +4,17 @@ from configparser import ConfigParser
 from sre_constants import SUCCESS
 from manager.enums import StatusCode, RequestModels
 from manager.database import DatabaseHandler
-from typing import Iterator, List, Dict, Any, Optional, Tuple
+from typing import Iterator, List, Dict, Any, Optional, Tuple, Union
 from dataclasses import dataclass
 
 from manager.enums import Provider
-from manager.provider.AWSProvider import AWSProvider
+from manager.provider.AWS.AWSProvider import AWSProvider
 from manager.provider.abstract_provider import BackendProvider
 from manager.models import TriggerModel, ScheduleModel, FunctionModel
 from manager.config import ConfigManager
 
+# Import custom logger 
+logger = logging.getLogger('root')
 
 class Models:
     FUNCTION = FunctionModel
@@ -61,22 +63,12 @@ class Manager:
         
         """ 
         try:
-            logging.info(f"Registering FunctionModel object {function}")
+            logger.info(f"Registering FunctionModel object {function}")
             function.save()
             self._registered_lambdas[function.name] = function
         except Exception as e:
             raise(e)
             #TODO: Log exception
-            StatusCode.DB_WRITE_ERROR
-        return StatusCode.SUCCESS
-
-    def unregister_function(self, function_name: str) -> StatusCode:
-        """
-        Removes a lambda function from orchestrator management.
-        """
-        try:
-            FunctionModel.name.delete(function_name)
-        except:
             StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
 
@@ -109,17 +101,31 @@ class Manager:
         except Exception as e:
             raise(e)
 
+    def describe_function(self, name:str) -> dict:
+        """
+        Describe a specific function
+        """
+        try:
+            function = self._provider.describe_function(name)
+            return function
+        except Exception as e:
+            raise(e)
+
     # SCHEDULE_________________________
     def register_schedule(self, schedule: Models.SCHEDULE) -> StatusCode:
         """
         Register an execution schedule to associate it with any
         function as trigger.
         """
+        # Ensure all elements are pickled
+        if not isinstance(schedule.cron, bytes):
+            schedule.cron = pickle.dumps(schedule.cron)
         try:
             schedule.save()
+            logger.debug(f'Registered Schedule: {schedule.name}')
         except Exception as e:
             #TODO: Handle exception 
-            logging.exception(e)
+            logger.exception(e)
             return  StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
     
@@ -130,41 +136,95 @@ class Manager:
         try:
             schedule = ScheduleModel.get(schedule_name)
             schedule.delete()
-            logging.debug("Removed")
+            logger.debug(f"Removed Schedule {schedule.name}")
         except Exception as e:
             raise(e)                
             #TODO: Log exception
             StatusCode.DB_WRITE_ERROR
         StatusCode.SUCCESS
     
-    def list_schedules(self):
+    def list_schedules(self) -> List[ScheduleModel]:
         """
         Lists all defined schedules within the orchestrator.
         """
         try:
-            schedules = ScheduleModel.scan()
-            return list(schedules)
+            schedules = self._backend.read_schedules()
+            return schedules
         except Exception as e:
             #TODO: Log exception
             raise e 
     
-    def get_schedule(self, schedule_name: str) -> ScheduleModel:
+    def describe_schedule(self, schedule_name: str) -> ScheduleModel:
         """Retrieves the model for the schedule by name"""
-        schedule = ScheduleModel.get(schedule_name)
-        return schedule
+        try:
+            schedule = self._backend.read_schedule(name=schedule_name)
+            return schedule 
+        except Exception as e:
+            raise(e)
 
-    def schedule_function(self, schedule: ScheduleModel, function_hk: str, function_sk: str = '') -> StatusCode:
+    def schedule_function(self, schedule: Optional[ScheduleModel], function_hk: str, function_sk: str = '') -> StatusCode:
         """
-        Applies a registered schedule to the function
+        Applies a registered schedule to the function.
+        
+        Allows to set the schedule to None to effectively remove the schedule
+        from the function.
         """
+        from manager.types import AWSRuleItem
+        from manager.provider.AWS import utils as AWSUtils 
         try:
             function = FunctionModel.get(function_hk)
+            # Update schedule information on function instance entry
             function.update(actions=[self.models.FUNCTION.schedule.set(pickle.dumps(schedule))])
+            if schedule:
+                # Update the schedule instance on the backend
+                schedule.update(actions=[self.models.SCHEDULE.associated.set(self.models.SCHEDULE.associated.append([function_hk]))])
+            
+                #TODO: Simplify logic with passing dict and pickle loading 
+                rule = AWSRuleItem(
+                   Name=schedule.name,
+                   ScheduleExpression=AWSUtils.compile_schedule_expression(schedule.cron),
+                   State='ENABLED'
+                )
+                self._provider.put_rule(rule.__dict__)
+                logger.debug(f"Scheduled function {function_hk} with schedule {rule.ScheduleExpression}")
             return StatusCode.SUCCESS 
         except Exception as e:
-            logging.exception("Exception updating function with schedule", e)
+            logger.exception("Exception updating function with schedule", e)
+            return StatusCode.DB_WRITE_ERROR
+    
+    def unschedule_function(self, name: str) -> StatusCode:
+        """
+        Clears a schedule on the given schedule
+        """
+        try:
+            self.schedule_function(None, name)
+            return StatusCode.SUCCESS
+        except Exception as e:
+            logger.exception(f"Removing schedule from function {name}")
             return StatusCode.DB_WRITE_ERROR
 
+    def unregister_function(self, name:  str) -> StatusCode:
+        """
+        Removes a function from registration.
+        All elements associated with the function get also deassigned, or removed
+        if this was the only association they held and they are not stand-alone.
+        """
+        try:
+            function = self._backend.read_function(name) 
+        except:
+            pass 
+        try:
+            # Check for all elements associated with this function
+            self.unschedule_function(function.name)
+            # Clean up all associations
+            #TODO: Remove other assocations with the function
+            # If successfully, remove the function
+
+            self._backend.unregister_function(name)
+            return StatusCode.SUCCESS
+        except Exception as e:
+            logger.exception(f"Unregistering function {function.name} raised")
+            return StatusCode.DB_WRITE_ERROR
 
     # TRIGGER_________________________
     def register_trigger(self, trigger: Models.TRIGGER) -> StatusCode:

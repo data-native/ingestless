@@ -43,3 +43,13 @@ class EventTargetItem:
     # InputPath: str = ''
     # InputTransformer: = {}
 
+@dataclass
+class AWSRuleItem:
+    """
+    An event rule instance required to schedule
+    execution of targets on AWS EventBus
+    """
+    Name : str
+    ScheduleExpression: str
+    State: str = 'DISABLED'
+    Description: str = ''

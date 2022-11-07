@@ -27,10 +27,18 @@ class DatabaseHandler:
         
         }
 
+    # FUNCTIONS_______________
     def write_function(self, function: FunctionItem):
         """
         Write a function to the database. 
         """
+
+    def read_function(self, function_hk:str):
+        """
+        Read a single function from the backend
+        """
+        function = FunctionModel.get(hash_key=function_hk)
+        return function
 
     def read_functions(self, stack: str='', details: bool = False):
         """
@@ -54,7 +62,7 @@ class DatabaseHandler:
         self._registered_lambdas.update(lambda_list)
         return DBResponse(lambda_list, StatusCode.SUCCESS)
 
-    def unregister_lambda(self, function_name: str) -> DBResponse:
+    def unregister_function(self, function_name: str) -> DBResponse:
         """
         Removes a lambda from management in the orchestration service.
         Clears the metadata, and removes all triggers associated with the completion
@@ -62,3 +70,16 @@ class DatabaseHandler:
         """
         removed_function = self._registered_lambdas.pop(function_name)
         return DBResponse(removed_function, StatusCode.SUCCESS)
+
+    # SCHEDULES___________________
+    def read_schedules(self) -> List[ScheduleModel]:
+        """
+        Retrieves the list of schedules 
+        """
+        schedules = ScheduleModel.scan(page_size=None)
+        return list(schedules)
+    
+    def read_schedule(self, name: str) -> ScheduleModel:
+        """Retrieves a schedule by name"""
+        schedule = ScheduleModel.get(name)
+        return schedule

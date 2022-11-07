@@ -8,7 +8,7 @@ from manager.models import FunctionModel
 from manager.database import DatabaseHandler
 from manager.enums import StatusCode, Services
 from manager.manager import Manager
-from manager.provider.AWSProvider import AWSProvider
+from manager.provider.AWS.AWSProvider import AWSProvider
 
 @pytest.fixture
 def local_manager(local_db):
@@ -66,13 +66,18 @@ def test_list_rules(AwsProvider: AWSProvider):
     response = AwsProvider.list_rules()
     rules = response['Rules']
     assert isinstance(rules, list)
-    assert all([name in rules[0] for name in ['Name', 'Arn', 'State', 'Description', 'ScheduleExpression', 'EventBusName']])
+    assert all([name in rules[0] for name in ['Name', 'Arn', 'State', 'ScheduleExpression', 'EventBusName']])
 
 def test_list_targets_by_rule(AwsProvider):
     raise NotImplementedError
 
-def test_put_permissions(AwsProvider):
+def test_put_permissions(AwsProvider: AWSProvider):
     raise NotImplementedError
+    response = AwsProvider.put_permissions(
+        action='SOMETHING',
+        principal='arn::xxx',
+    )
+    return response
 
 def test_put_rule(AwsProvider):
     rule = {
@@ -94,7 +99,7 @@ def test_put_targets(AwsProvider: AWSProvider):
     
     * AWS Lambda, AWS Step Functions, AWS Batch Job, SNS, SQS
     """
-
+    raise NotImplementedError
     functions = AwsProvider.list_functions()
     rule_name = 'Testrule'
     targets = []

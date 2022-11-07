@@ -17,6 +17,7 @@ from manager.manager import Manager
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from typing import List, Dict
 
+logger = logging.getLogger('root')
 
 manager = Manager()
 
@@ -98,7 +99,21 @@ def list_all_registered(
     )):
     """Retrieve the list of registered functions in the orchestrator"""
     display_registered_functions()
-    
+
+@function_app.command("remove") 
+def unregister_function(
+    name: str = typer.Option(
+        '',
+        "--name",
+        "-n",
+        help="Name of the function to remove"
+    )):
+    """Remove a function from the registry"""
+    functions = display_registered_functions()
+    select_idx = typer.prompt("Which function(s) to remove:", type=int)
+    function = functions[select_idx]
+    manager.unregister_function(function.name)
+
 @function_app.command("schedule")
 def associate_schedule_to_function(
     attributes: List[str] = typer.Option(
@@ -128,7 +143,7 @@ def associate_schedule_to_function(
     selected_function_idx = display_selection(selection_options)
     # Get the selected funtions
     selected_function = functions[selected_function_idx]
-    logging.info("Selected functions", selected_function)
+    logger.info("Selected functions", selected_function)
     # Prompt selection of 1) CRON direct to create new schedule 2) Select existing
     schedule_options = {
         'intro': "Select your schedule",
@@ -153,6 +168,7 @@ def associate_schedule_to_function(
             # Make a selection which one to apply
             schedule_idx = typer.prompt("Select a schedule to apply: ", type=int)
             schedule = schedules[schedule_idx]
+            schedule.cron = pickle.loads(schedule.cron)
         elif method == 1 : 
             # Create a Schedule object with new cron
             registration_status = None
@@ -163,12 +179,12 @@ def associate_schedule_to_function(
                 typer.secho("Create new schedule", fg='green')
                 name = typer.prompt(">> Name: ")
                 cron = Cron(typer.prompt(">> CRON schedule [mhdwy]: ", type=str))
-                logging.debug("Created cron dumps to binary ")
+                logger.debug("Created cron dumps to binary ")
                 schedule = ScheduleModel(name, cron=cron, associated=[selected_function])
                 registration_status = manager.register_schedule(schedule)
         
     # Associate schedule with all functions that have been selected
-    manager.schedule_function(schedule, selected_function.name)
+    manager.schedule_function(schedule, function_hk=selected_function.name)
 
     # for function in selected_functions:
         # manager.schedule_function(schedule, function)

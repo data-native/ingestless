@@ -48,7 +48,7 @@ class ScheduleModel(Model):
         host = HOST 
     name = UnicodeAttribute(hash_key=True)
     cron = BinaryAttribute()
-    associated = ListAttribute(null=True)
+    associated = ListAttribute(default=[])
 
 class Models(Enum):
     """Defines the list of models for import in other modules"""

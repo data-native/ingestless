@@ -1,4 +1,5 @@
 import json
+import pickle
 from typing import Iterable
 import pytest
 
@@ -78,9 +79,6 @@ def test_list_functions(local_manager):
     assert isinstance(functions, Iterable)
     assert isinstance(functions[0], dict)
 
-def test_list_options():
-    raise NotImplementedError
-
 def test_list_registered_functions(local_manager: Manager):
     #TODO: Extend to create temporary tests in temp local db
     # local_manager.register_function(local_manager.models.FUNCTION("test", ))
@@ -90,25 +88,69 @@ def test_list_registered_functions(local_manager: Manager):
     for f in functions:
         assert all([k in f._get_keys() for k in ['name', 'attributes', 'schedule']])
 
+def test_schedule_function(local_manager: Manager):
+    """
+    Ensure the schedule is stored on the function model, 
+    is registered in the backend provider and is deployed by default
+    """
+    # Preparation
+    function = local_manager.models.FUNCTION('test', attributes={})
+    local_manager.register_function(function)
+    cron = Cron('* 2 * * *', {})
+    schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
+    # Apply schedule
+    schedule_status = local_manager.schedule_function(schedule, function_hk='test')
+    assert schedule_status == StatusCode.SUCCESS
+
+def test_unregister_function(local_manager: Manager):
+    """
+    Ensure the function is properly removed with all
+    dependencies and associations cleaned up
+    """
+    # Prep
+    schedule = local_manager.models.SCHEDULE(
+        name='testschedule',
+        cron = Cron('3 * * * *')
+    )
+    function = local_manager.models.FUNCTION('empheral', 
+    attributes={},
+    schedule = pickle.dumps(schedule)
+    )
+    local_manager.register_function(function)
+    # Function call
+    response = local_manager.unregister_function(function.name)
+    assert response
+
+
+
+def test_list_options():
+    raise NotImplementedError
+
+
+# SCHEDULES _______________________
 def test_register_schedule(local_manager):
-    schedule = local_manager.models.SCHEDULE('test_schedule', cron='* * * * *')
+    schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
     local_manager.register_schedule(schedule)
 
 def test_unregister_schedule(local_manager):
-    schedule_name = 'test'
-    removed_schedule = local_manager.unregister_schedule(schedule_name)
-
-def test_schedule_function(local_manager: Manager):
-    function = local_manager.models.FUNCTION('test', attributes={})
-    local_manager.register_function(function)
-    cron = Cron('* * * * *', {})
-    schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
-    schedule_status = local_manager.schedule_function(schedule, function_hk='test')
-    assert schedule_status == StatusCode.SUCCESS
+    # Setup
+    schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
+    local_manager.register_schedule(schedule)
+    # Function call
+    removed_schedule = local_manager.unregister_schedule('test_schedule')
 
 def test_list_schedules(local_manager):
     schedules = local_manager.list_schedules()
 
+def test_describe_schedule(local_manager: Manager):
+    """
+    Ensure all details about the schedule are queryable from the CLI
+    """
+    # Create a schedule
+    schedule = local_manager.models.SCHEDULE('test_schedule', cron='5 * * * *')
+    local_manager.register_schedule(schedule)
+    schedule = local_manager.describe_schedule(schedule_name=schedule.name)
+# TRIGGERS_______________________
 def test_register_trigger(local_manager):
     trigger = local_manager.register_trigger()
 
