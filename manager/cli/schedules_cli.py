@@ -1,5 +1,6 @@
 import typer
 import pickle
+import logging
 from typing import List
 from cron_converter import Cron
 from tabulate import tabulate
@@ -7,6 +8,9 @@ from tabulate import tabulate
 from manager.manager import Manager
 from manager.models import ScheduleModel
 from manager.types import ScheduleItem
+from manager.cli import utils
+
+logger = logging.getLogger('root')
 
 schedule_app = typer.Typer()
 
@@ -74,8 +78,10 @@ def remove_schedule(
     """
     schedules = schedule_list_all()
 
-    schedule_id = typer.prompt("Which schedules to delete?", type=int)
-    selected_schedule = schedules[schedule_id]
-    
-    if typer.confirm(f"You sure you want to remove {selected_schedule.name}? y/N"):
-        manager.unregister_schedule(selected_schedule.name)
+    ids = typer.prompt("Which schedules to delete?", type=str)
+    ids = utils.get_argument_list(ids, type=int)
+    if typer.confirm(f"You sure you want to remove schedules: {ids}? y/N"):
+        for id in ids:    
+            selected_schedule = schedules[id]
+            manager.unregister_schedule(selected_schedule.name)
+            logger.debug(f'Removed schedule {selected_schedule.name}')

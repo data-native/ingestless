@@ -5,23 +5,26 @@ Functions on the chosen backend can be CRUDed and associated
 with orchestration elements, such as triggers and schedules
 also managed in the system.
 """
-import json
 import logging
 import typer
 import pickle
 from cron_converter import Cron
+from typing import List, Dict
 from tabulate import tabulate
 
 from manager.enums import StatusCode
 from manager.manager import Manager
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
-from typing import List, Dict
+from manager.cli import utils
 
 logger = logging.getLogger('root')
 
 manager = Manager()
 
 function_app = typer.Typer()
+
+# HELPER FUNCTIONS_____________
+#TODO: Extract to utils
 
 # Define the app interface
 @function_app.command("register")
@@ -47,20 +50,22 @@ def function_create(
     # TODO: Displey the functions not yet registered in a numbered list
     functions = display_functions(attributes=attributes)
     # TODO: Display a prompt allowing the user to enter the number of the function to register
-    selected_ids = typer.prompt("Select one or more functions to register.", type=int)
-    selection = functions[selected_ids]
-    # selection = [functions[id] for id in selected_ids]
-    # TODO: Get the function details for the selected function
-    typer.secho(selection)
+    ids = typer.prompt("Select one or more functions to register.", type=str)
+        
+    ids = utils.get_argument_list(ids, type=int)
+
     # TODO: Write the new function entry into the backend table
-    status = manager.register_function(manager.models.FUNCTION(
-        name=selection['FunctionName'],
-        attributes = selection,
-        schedule = None
-    ))
-    if status != StatusCode.SUCCESS:
-        typer.secho("Error writing element", fg='Red')
-    # TODO: Display an updated list of available/unregistered functions for further selection
+    if typer.confirm(f"Register functions {ids}"):
+        for id in ids:
+            selection = functions[id]
+            typer.secho(selection)
+            status = manager.register_function(manager.models.FUNCTION(
+                name=selection['FunctionName'],
+                attributes = selection,
+                schedule = None
+            ))
+            if status != StatusCode.SUCCESS:
+                typer.secho("Error writing element", fg='Red')
 
     # typer.secho(f"Putting function {arn} under orchestration")
     
@@ -141,6 +146,7 @@ def associate_schedule_to_function(
         'type': int
     }
     selected_function_idx = display_selection(selection_options)
+
     # Get the selected funtions
     selected_function = functions[selected_function_idx]
     logger.info("Selected functions", selected_function)
