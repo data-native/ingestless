@@ -103,7 +103,7 @@ def test_put_targets(AwsProvider: AWSProvider):
     functions = AwsProvider.list_functions()
     rule_name = 'Testrule'
     targets = []
-    response = AwsProvider.put_targets(
+    response = AwsProvider.put_event_targets(
         rule=rule_name,
         targets=targets,
     )
@@ -117,7 +117,7 @@ def test_put_target_function(AwsProvider: AWSProvider):
     from manager.types import EventTargetItem
     rule_name="Testrule"
     functions = AwsProvider.list_functions()
-    response = AwsProvider.put_target(
+    response = AwsProvider.put_event_target(
         rule=rule_name,
         type=Services.Function,
         target=functions[0]
@@ -175,3 +175,25 @@ def test_list_rules_by_target(AwsProvider: AWSProvider):
     assert 'RuleNames' in response
     assert isinstance(response['RuleNames'], list)
     assert 'Testrule' in response['RuleNames']
+
+def test_remove_event_targets(AwsProvider: AWSProvider):
+    """
+    Can remove a single or list of targets from an event rule
+    """
+    # Preparations
+    rule_name="Testrule"
+    functions = AwsProvider.list_functions()
+    AwsProvider.put_event_target(
+        rule=rule_name,
+        type=Services.Function,
+        target=functions[0]
+    )
+    # Calling the function
+    AwsProvider.remove_event_targets(
+        rule=rule_name,
+        type=Services.Function,
+        targets=functions[0]['FunctionName']
+    )
+    # Clean up
+
+

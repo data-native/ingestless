@@ -6,8 +6,9 @@ with the AWS services.
 """
 import boto3
 import logging
-from manager.models import FunctionModel, TriggerModel, ScheduleModel
-from typing import Optional, List, Dict
+from pynamodb.models import MetaModel
+from manager.models import FunctionModel, TriggerModel, ScheduleModel, Models
+from typing import Optional, List, Dict, Union
 from botocore.client import BaseClient as BotoClient
 from botocore import exceptions as BotoCoreExceptions
 
@@ -101,12 +102,14 @@ class AWSProvider(BackendProvider):
         response = self.get_client(Services.ServiceBus).enable_rule(Name=name)
         return response
     
-    def list_rules_by_target(self, targetArn:str):
+    def list_rules_by_target(self, type: Services, target:str):
         """
         Lists the rules for the specified target.
         """
-        response = self.get_client(Services.ServiceBus).list_rule_names_by_target(TargetArn=targetArn)
-        return response
+        if type == Services.Function:
+            function = FunctionModel.get(target)
+            response = self.get_client(Services.ServiceBus).list_rule_names_by_target(TargetArn=function['FunctionArn'])
+            return response
 
     def list_rules(self, prefix:str=''):
         """
@@ -143,7 +146,7 @@ class AWSProvider(BackendProvider):
             logging.debug(f"event put_rule::ClientError: {client_e}")
             raise(client_e)
      
-    def put_targets(self,
+    def put_event_targets(self,
         rule: str,
         targets: List[EventTargetItem],
     ):
@@ -160,7 +163,7 @@ class AWSProvider(BackendProvider):
             logging.debug(f"AWSProvider::put_targets: Error {e}")
             raise(e) 
 
-    def put_target(self, 
+    def put_event_target(self, 
         rule: str,
         type: Services,
         #TODO:  Add typehint for target
@@ -186,6 +189,27 @@ class AWSProvider(BackendProvider):
             # Fill lambda details
             raise NotImplementedError
         return response
+    
+    def remove_event_targets(self,
+        rule: str,
+        type: Models,
+        targets: Union[str, List[str]]
+    ):
+        """
+        Disassociates a rule from a specified Service target
+        """
+        if isinstance(targets, str):
+            targets = [targets]
+
+        if type == Models.FUNCTION.value:
+            response = self.get_client(Services.ServiceBus).remove_targets(
+                Rule=rule,
+                Ids=targets
+            )
+            return response
+        else:
+            raise ValueError(f"Unable to remove event target from rule")
+        
 
     
 # class AzureProvider(BackendProvider):

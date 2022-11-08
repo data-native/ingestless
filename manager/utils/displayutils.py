@@ -1,4 +1,4 @@
-from typer import secho
+import typer
 from textwrap import dedent
 
 def secho(text: str, highlight:str) -> None:

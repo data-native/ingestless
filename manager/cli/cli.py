@@ -10,7 +10,7 @@ from manager.cli.trigger_cli import trigger_app
 from manager.cli.functions_cli import function_app
 from manager.cli.schedules_cli import schedule_app
 
-from manager.utils import log
+from manager.utils import logutils
 
 # Define the app interface
 app = typer.Typer()
@@ -19,7 +19,7 @@ app.add_typer(schedule_app, name="schedules")
 app.add_typer(trigger_app, name="triggers")
 
 # Define global logger
-logger = log.setup_custom_logger('root')
+logger = logutils.setup_custom_logger('root')
 
 # Define general methods
 def _version_callback(value: bool) -> None:

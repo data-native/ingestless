@@ -1,10 +1,10 @@
 from enum import Enum
 from platform import system
 import configparser
-import logging 
+from datetime import datetime, timezone
 
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, BinaryAttribute, BooleanAttribute, UTCDateTimeAttribute, JSONAttribute, ListAttribute
+from pynamodb.attributes import UnicodeAttribute, BinaryAttribute, BooleanAttribute, UTCDateTimeAttribute, JSONAttribute, ListAttribute 
 
 parser = configparser.ConfigParser()
 parser.read('./manager/config.ini')
@@ -17,6 +17,9 @@ FUNCTION_TABLE_NAME = parser['DEFAULT']['function_table_name']
 SCHEDULE_TABLE_NAME = parser['DEFAULT']['schedule_table_name']
 TRIGGER_TABLE_NAME = parser['DEFAULT']['trigger_table_name']
 
+def get_current_time_utc():
+    return datetime.now(timezone.utc)
+
 class FunctionModel(Model):
     """
     A serverless function to orchestrate 
@@ -25,9 +28,13 @@ class FunctionModel(Model):
         table_name = FUNCTION_TABLE_NAME 
         host = HOST 
     name = UnicodeAttribute(hash_key=True) 
+    resourceId = UnicodeAttribute()
     attributes = JSONAttribute()
     schedule = BinaryAttribute(null=True)
     app = UnicodeAttribute(null=True)
+    status = UnicodeAttribute(null=True)
+    registeredAt = UTCDateTimeAttribute(default_for_new=get_current_time_utc)
+    lastUpdatedAt = UTCDateTimeAttribute(default_for_new=get_current_time_utc)
 
 class TriggerModel(Model):
     """

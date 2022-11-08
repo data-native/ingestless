@@ -61,8 +61,10 @@ def function_create(
             typer.secho(selection)
             status = manager.register_function(manager.models.FUNCTION(
                 name=selection['FunctionName'],
+                resourceId=selection['FunctionArn'],
                 attributes = selection,
-                schedule = None
+                schedule = None,
+                status = None,
             ))
             if status != StatusCode.SUCCESS:
                 typer.secho("Error writing element", fg='Red')
@@ -115,9 +117,11 @@ def unregister_function(
     )):
     """Remove a function from the registry"""
     functions = display_registered_functions()
-    select_idx = typer.prompt("Which function(s) to remove:", type=int)
-    function = functions[select_idx]
-    manager.unregister_function(function.name)
+    select_idx = typer.prompt("Which function(s) to remove:", type=str)
+    select_idx = utils.get_argument_list(select_idx, type=int)
+    for idx in select_idx:
+        function = functions[idx]
+        manager.unregister_function(function.name)
 
 @function_app.command("schedule")
 def associate_schedule_to_function(
@@ -174,7 +178,6 @@ def associate_schedule_to_function(
             # Make a selection which one to apply
             schedule_idx = typer.prompt("Select a schedule to apply: ", type=int)
             schedule = schedules[schedule_idx]
-            schedule.cron = pickle.loads(schedule.cron)
         elif method == 1 : 
             # Create a Schedule object with new cron
             registration_status = None
@@ -193,7 +196,7 @@ def associate_schedule_to_function(
         logger.info("Selected functions", selected_function)
 
         #TODO: Ensure schedule objects gets updated associated functions
-        manager.schedule_function(schedule, function_hk=selected_function.name)
+        manager.schedule_function(schedule.name, function_hk=selected_function.name)
 
 @function_app.command("describe") 
 def describe_function(
@@ -296,28 +299,31 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
             # typer.Exit(0)
             # return
     # TODO: Display results as table
-    headers = ["#", "App","Name","FunctionHandler", "Runtime", "Schedule","[mhdWmY]", "Status"]
+    headers = ["#", "App","Name","FunctionHandler", "Runtime", "Schedule","[mhdWmY]", "Status", "ResourceId"]
     result_table = []
     
     scope = "" if app == '' else f"for {app}"
     title = f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(registered_functions)} Functions {scope}"
     typer.secho(title, fg='blue')
     # Conditionally manage non existance of schedules on functions 
-    cron = ''
-    schedule_name = ''
+    cron = '/'
+    schedule_name = '/'
     for function in registered_functions:
         # TODO: Get the details for the associated schedule
-        status = 'NOT SET'
         if function.schedule:
-            schedule = pickle.loads(function.schedule)
             #TODO: Extract status from schedule
-            schedule_meta = manager.describe_schedule(schedule.name)
-            if schedule.cron and isinstance(schedule.cron, bytes):
-                cron_converter = pickle.loads(schedule.cron)
-                cron = cron_converter.to_string()
-            else:
-                cron = schedule.cron.to_string()
-            schedule_name = schedule.name
-        result_table.append([function.app, function.name, function.attributes.get('Handler', 'Not set'), function.attributes.get('Runtime', 'Not Set'), schedule_name, cron, status])
+            schedule_meta = manager.describe_schedule(function.schedule.name)
+            cron = function.schedule.cron.to_string()
+            schedule_name = function.schedule.name
+        result_table.append([
+            function.app, 
+            function.name, 
+            function.attributes.get('Handler', 'Not set'), 
+            function.attributes.get('Runtime', 'Not Set'), 
+            schedule_name, 
+            cron, 
+            function.status,
+            function.resourceId
+        ])
     typer.echo(tabulate(result_table, headers=headers, showindex='always'))
     return registered_functions

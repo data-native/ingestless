@@ -1,17 +1,14 @@
 import logging
 import pickle
-from configparser import ConfigParser
-from sre_constants import SUCCESS
 from manager.enums import StatusCode, RequestModels
 from manager.database import DatabaseHandler
 from typing import Iterator, List, Dict, Any, Optional, Tuple, Union
-from dataclasses import dataclass
 
 from manager.enums import Provider
 from manager.provider.AWS.AWSProvider import AWSProvider
-from manager.provider.abstract_provider import BackendProvider
 from manager.models import TriggerModel, ScheduleModel, FunctionModel
 from manager.config import ConfigManager
+from manager.utils import dynamoutils as functionUtils
 
 # Import custom logger 
 logger = logging.getLogger('root')
@@ -59,20 +56,42 @@ class Manager:
         function: Models.FUNCTION,
     ) -> StatusCode:
         """
-        Register a lambda function with the orchestrator.
-        
+        Register a serverless function with the orchestrator.
+
+        #TODO: Store only the parameters that don't change in the database, or make sure to find a way to keep them current enough 
+        #TODO: Ensure that deployed changes to the functions trigger an update on the metadata in the orchestrator (Maybe implement in Make file and force the use)
         """ 
         try:
-            logger.info(f"Registering FunctionModel object {function}")
-            function.save()
             self._registered_functions[function.name] = function
+            self._backend.write_function(function)
         except Exception as e:
             raise(e)
             #TODO: Log exception
             StatusCode.DB_WRITE_ERROR
         return StatusCode.SUCCESS
 
-    def list_functions(self, stack: str='') -> Optional[List[dict]]:
+    def unregister_function(self, name:  str) -> StatusCode:
+        """
+        Removes a function from registration.
+        All elements associated with the function get also deassigned, or removed
+        if this was the only association they held and they are not stand-alone.
+        """
+        function = self._backend.read_function(name) 
+        try:
+            # Check for all elements associated with this function
+            self.unschedule_function(function.name)
+            # Clean up all associations
+            #TODO: Remove other assocations with the function
+            # If successfully, remove the function
+
+            self._backend.delete_function(name)
+            return StatusCode.SUCCESS
+        except Exception as e:
+            logger.exception(f"Unregistering function {function.name} raised")
+            return StatusCode.DB_WRITE_ERROR
+
+
+    def list_functions(self, stack: str='') -> List[dict]:
         """
         Lists the available lambda functions in a given account. 
         Optionally filter by deployment stack, accountId.
@@ -81,6 +100,7 @@ class Manager:
         @region: Select a region to list lambdas in
         """
         try:
+            #TODO: Implement limit on stack
             functions = self._provider.list_functions()
             return functions
         except Exception as e:
@@ -108,7 +128,8 @@ class Manager:
         try:
             function_provider = self._provider.read_function(name)
             function_meta = self._backend.read_function(name)
-            function_meta.schedule = pickle.loads(function_meta.schedule)
+            if function_meta.schedule:
+                function_meta.schedule = pickle.loads(function_meta.schedule)
             function_meta = function_meta.__dict__['attribute_values']
 
             #Subset the entries to the relevant fields
@@ -174,6 +195,7 @@ class Manager:
     def schedule_function(self, schedule_id: str, function_hk: str, function_sk: str = '') -> StatusCode:
         """
         Applies a registered schedule to the function.
+        #TODO: Generalize for multiple providers by moving out the provider logic into provider class
         """
         from cron_converter import Cron
         from manager.types import AWSRuleItem
@@ -182,10 +204,10 @@ class Manager:
         try:
             # Update schedule information on function instance entry
             schedule = self._backend.read_schedule(schedule_id)
-            self._backend.set_schedule(target=Models.FUNCTION, schedule_id=schedule_id, target_id=function_hk)
+            self._backend.set_schedule(target=self.models.FUNCTION, schedule_id=schedule_id, target_id=function_hk)
             # Update the schedule instance on the backend
-            if not isinstance(schedule.cron, Cron):
-                schedule.cron = pickle.loads(schedule.cron)
+            # if not isinstance(schedule.cron, Cron):
+                # schedule.cron = pickle.loads(schedule.cron)
             
             #TODO: Simplify logic with passing dict and pickle loading 
             rule = AWSRuleItem(
@@ -202,36 +224,26 @@ class Manager:
     
     def unschedule_function(self, name: str) -> StatusCode:
         """
-        Clears a schedule on the given schedule
+        Removes the schedule from the given function 
         """
         try:
+            function = self._backend.read_function(name)
+            rule_name = function.schedule.name
+
+            # Remove rule
             self._backend.unset_schedule(target=self.models.FUNCTION, target_id=name)
+            response = self._provider.remove_event_targets(
+                rule=function.schedule.name,
+                type=self.models.FUNCTION,
+                targets=name
+            )
+            # Check that there are still functions asscoiated otherwise disable the rule
+            active_targets = self._provider.list_targets_by_rule(rule_name)
+            if not active_targets:
+                self._provider.disable_rule(rule_name)
             return StatusCode.SUCCESS
         except Exception as e:
             logger.exception(f"Removing schedule from function {name}")
-            return StatusCode.DB_WRITE_ERROR
-
-    def unregister_function(self, name:  str) -> StatusCode:
-        """
-        Removes a function from registration.
-        All elements associated with the function get also deassigned, or removed
-        if this was the only association they held and they are not stand-alone.
-        """
-        try:
-            function = self._backend.read_function(name) 
-        except:
-            pass 
-        try:
-            # Check for all elements associated with this function
-            self.unschedule_function(function.name)
-            # Clean up all associations
-            #TODO: Remove other assocations with the function
-            # If successfully, remove the function
-
-            self._backend.unregister_function(name)
-            return StatusCode.SUCCESS
-        except Exception as e:
-            logger.exception(f"Unregistering function {function.name} raised")
             return StatusCode.DB_WRITE_ERROR
 
     # TRIGGER_________________________

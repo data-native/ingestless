@@ -20,10 +20,9 @@ def local_db():
     #TODO: Place a starting set of data in local db
     return DatabaseHandler() 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def local_manager(local_db):
     return Manager() 
-
 
 @pytest.fixture
 def mock_json_file(tmp_path):
@@ -65,23 +64,25 @@ class TestFunctionManager:
         # assert isinstance(status, dict) 
         # assert isinstance(status["status"], StatusCode)
 
-    def test_register_function(self):
-        name = "Testfunction"
+    def test_register_function(self, local_manager: Manager):
+        functions = local_manager.list_functions()
+        function = functions[0]
         local_manager.register_function(local_manager.models.FUNCTION(
-            name,
-            attributes={
-                "whatever": "works"
-            }
+            function['FunctionName'],
+            resourceId=function['FunctionArn'],
+            attributes=function
         ))
-        assert name in local_manager._registered_functions
+        assert function['FunctionName'] in local_manager._registered_functions
+        # Cleanup
+        local_manager.unregister_function(function['FunctionName'])
 
 
-    def test_list_functions(self):
+    def test_list_functions(self, local_manager: Manager):
         functions = local_manager.list_functions()
         assert isinstance(functions, Iterable)
         assert isinstance(functions[0], dict)
 
-    def test_list_registered_functions(self):
+    def test_list_registered_functions(self, local_manager: Manager):
         #TODO: Extend to create temporary tests in temp local db
         # local_manager.register_function(local_manager.models.FUNCTION("test", ))
         functions = local_manager.list_registered_functions() 
@@ -90,7 +91,7 @@ class TestFunctionManager:
         for f in functions:
             assert all([k in f._get_keys() for k in ['name', 'attributes', 'schedule']])
 
-    def test_schedule_function(self):
+    def test_schedule_function(self, local_manager: Manager):
         """
         Ensure the schedule is stored on the function model, 
         is registered in the backend provider and is deployed by default
@@ -105,11 +106,12 @@ class TestFunctionManager:
         schedule_status = local_manager.schedule_function(schedule.name, function_hk='test')
         assert schedule_status == StatusCode.SUCCESS
 
-    def test_unschedule_function(self):
+    def test_unschedule_function(self, local_manager: Manager):
         """
         Ensure the schedule can be reset to None on the 
         chosen function.
         """
+        from manager.enums import Services
         # Set the function
         function = local_manager.models.FUNCTION('test', attributes={})
         local_manager.register_function(function)
@@ -118,9 +120,12 @@ class TestFunctionManager:
         local_manager.register_schedule(schedule)
         local_manager.schedule_function(schedule.name, function.name)
         # Remove the function
-        local_manager.unschedule_function(function.name)
-
-    def test_unregister_function(self):
+        response = local_manager.unschedule_function(function.name)
+        assert response.SUCCESS
+        assert local_manager._provider.list_rules_by_target(
+            type=Services.Function,
+            target=function.name)
+    def test_unregister_function(self, local_manager: Manager):
         """
         Ensure the function is properly removed with all
         dependencies and associations cleaned up
@@ -139,7 +144,7 @@ class TestFunctionManager:
         response = local_manager.unregister_function(function.name)
         assert response
 
-    def test_describe_function(self):
+    def test_describe_function(self, local_manager: Manager):
         """
         Ensure a function description unified from backend provider
         details and orchestrator state specifics is returned
@@ -154,28 +159,28 @@ class TestFunctionManager:
     # 
 
     # HELPERS________________________
-    def test_list_options(self):
+    def test_list_options(self, local_manager: Manager):
         raise NotImplementedError
 
 
 # SCHEDULES _______________________
 class TestScheduleManager:
     
-    def test_register_schedule(self):
+    def test_register_schedule(self, local_manager: Manager):
         schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
         local_manager.register_schedule(schedule)
 
-    def test_unregister_schedule(self):
+    def test_unregister_schedule(self, local_manager: Manager):
         # Setup
         schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
         local_manager.register_schedule(schedule)
         # Function call
         removed_schedule = local_manager.unregister_schedule('test_schedule')
 
-    def test_list_schedules(self):
+    def test_list_schedules(self, local_manager: Manager):
         schedules = local_manager.list_schedules()
 
-    def test_describe_schedule(self):
+    def test_describe_schedule(self, local_manager: Manager):
         """
         Ensure all details about the schedule are queryable from the CLI
         """
@@ -185,14 +190,14 @@ class TestScheduleManager:
         schedule = local_manager.describe_schedule(schedule_name=schedule.name)
 
     # TRIGGERS_______________________
-    def test_register_trigger(self):
+    def test_register_trigger(self, local_manager: Manager):
         raise NotImplementedError
         trigger = self.manager.register_trigger()
 
-    def test_unregister_trigger(self):
+    def test_unregister_trigger(self, local_manager: Manager):
         raise NotImplementedError
         removed_trigger = self.manager.unregister_trigger()
         
-    def test_list_triggers(self):
+    def test_list_triggers(self, local_manager: Manager):
         raise NotImplementedError
         triggers = self.manager.list_triggers()
