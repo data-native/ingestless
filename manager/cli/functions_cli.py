@@ -302,14 +302,16 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
     scope = "" if app == '' else f"for {app}"
     title = f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(registered_functions)} Functions {scope}"
     typer.secho(title, fg='blue')
-    # Display each result in newline with index for selection
+    # Conditionally manage non existance of schedules on functions 
     cron = ''
     schedule_name = ''
     for function in registered_functions:
-        # Get the details for the associated schedule
+        # TODO: Get the details for the associated schedule
         status = 'NOT SET'
         if function.schedule:
             schedule = pickle.loads(function.schedule)
+            #TODO: Extract status from schedule
+            schedule_meta = manager.describe_schedule(schedule.name)
             if schedule.cron and isinstance(schedule.cron, bytes):
                 cron_converter = pickle.loads(schedule.cron)
                 cron = cron_converter.to_string()

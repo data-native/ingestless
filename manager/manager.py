@@ -171,35 +171,30 @@ class Manager:
         except Exception as e:
             raise(e)
 
-    def schedule_function(self, schedule: Optional[ScheduleModel], function_hk: str, function_sk: str = '') -> StatusCode:
+    def schedule_function(self, schedule_id: str, function_hk: str, function_sk: str = '') -> StatusCode:
         """
         Applies a registered schedule to the function.
-        
-        Allows to set the schedule to None to effectively remove the schedule
-        from the function.
         """
         from cron_converter import Cron
         from manager.types import AWSRuleItem
 
         from manager.provider.AWS import utils as AWSUtils 
         try:
-            function = FunctionModel.get(function_hk)
             # Update schedule information on function instance entry
-            function.update(actions=[self.models.FUNCTION.schedule.set(pickle.dumps(schedule))])
-            if schedule:
-                # Update the schedule instance on the backend
-                schedule.update(actions=[self.models.SCHEDULE.associated.set(self.models.SCHEDULE.associated.append([function_hk]))])
-                if not isinstance(schedule.cron, Cron):
-                    schedule.cron = pickle.loads(schedule.cron)
-                
-                #TODO: Simplify logic with passing dict and pickle loading 
-                rule = AWSRuleItem(
-                   Name=schedule.name,
-                   ScheduleExpression=AWSUtils.compile_schedule_expression(schedule.cron),
-                   State='ENABLED'
-                )
-                self._provider.put_rule(rule.__dict__)
-                logger.debug(f"Scheduled function {function_hk} with schedule {rule.ScheduleExpression}")
+            schedule = self._backend.read_schedule(schedule_id)
+            self._backend.set_schedule(target=Models.FUNCTION, schedule_id=schedule_id, target_id=function_hk)
+            # Update the schedule instance on the backend
+            if not isinstance(schedule.cron, Cron):
+                schedule.cron = pickle.loads(schedule.cron)
+            
+            #TODO: Simplify logic with passing dict and pickle loading 
+            rule = AWSRuleItem(
+               Name=schedule_id,
+               ScheduleExpression=AWSUtils.compile_schedule_expression(schedule.cron),
+               State='ENABLED'
+            )
+            self._provider.put_rule(rule.__dict__)
+            logger.debug(f"Scheduled function {function_hk} with schedule {rule.ScheduleExpression}")
             return StatusCode.SUCCESS 
         except Exception as e:
             logger.exception("Exception updating function with schedule", e)
@@ -210,7 +205,7 @@ class Manager:
         Clears a schedule on the given schedule
         """
         try:
-            self.schedule_function(None, name)
+            self._backend.unset_schedule(target=self.models.FUNCTION, target_id=name)
             return StatusCode.SUCCESS
         except Exception as e:
             logger.exception(f"Removing schedule from function {name}")
