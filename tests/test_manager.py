@@ -49,9 +49,6 @@ test_data1 = {
 # FUNCTIONS_________________
 class TestFunctionManager:
     
-    def __init__(self, local_manager) -> None:
-        self.manager: Manager = local_manager
-
     @pytest.mark.parametrize(
         "function_name, body, expected",
         [
@@ -80,14 +77,14 @@ class TestFunctionManager:
 
 
     def test_list_functions(self):
-        functions = self.manager.list_functions()
+        functions = local_manager.list_functions()
         assert isinstance(functions, Iterable)
         assert isinstance(functions[0], dict)
 
     def test_list_registered_functions(self):
         #TODO: Extend to create temporary tests in temp local db
         # local_manager.register_function(local_manager.models.FUNCTION("test", ))
-        functions = self.manager.list_registered_functions() 
+        functions = local_manager.list_registered_functions() 
 
         assert isinstance(functions, list)
         for f in functions:
@@ -99,7 +96,7 @@ class TestFunctionManager:
         is registered in the backend provider and is deployed by default
         """
         # Preparation
-        function = self.manager.models.FUNCTION('test', attributes={})
+        function = local_manager.models.FUNCTION('test', attributes={})
         local_manager.register_function(function)
         cron = Cron('* 2 * * *', {})
         schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
@@ -114,7 +111,7 @@ class TestFunctionManager:
         chosen function.
         """
         # Set the function
-        function = self.manager.models.FUNCTION('test', attributes={})
+        function = local_manager.models.FUNCTION('test', attributes={})
         local_manager.register_function(function)
         cron = Cron('* 2 * * *', {})
         schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
@@ -129,7 +126,7 @@ class TestFunctionManager:
         dependencies and associations cleaned up
         """
         # Prep
-        schedule = self.manager.models.SCHEDULE(
+        schedule = local_manager.models.SCHEDULE(
             name='testschedule',
             cron = Cron('3 * * * *')
         )
@@ -148,12 +145,13 @@ class TestFunctionManager:
         details and orchestrator state specifics is returned
         """
         # Setup
-        functions = self.manager.list_functions()
+        functions = local_manager.list_functions()
         function = functions[0] 
         # Function call
-        response = self.manager.describe_function(function['FunctionName'])
+        response = local_manager.describe_function(function['FunctionName'])
         assert isinstance(response, dict)
 
+    # 
 
     # HELPERS________________________
     def test_list_options(self):
@@ -163,22 +161,19 @@ class TestFunctionManager:
 # SCHEDULES _______________________
 class TestScheduleManager:
     
-    def __init__(self, local_manager: Manager):
-        self.manager = local_manager
-
     def test_register_schedule(self):
-        schedule = self.manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
+        schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
         local_manager.register_schedule(schedule)
 
     def test_unregister_schedule(self):
         # Setup
-        schedule = self.manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
+        schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
         local_manager.register_schedule(schedule)
         # Function call
         removed_schedule = local_manager.unregister_schedule('test_schedule')
 
     def test_list_schedules(self):
-        schedules = self.manager.list_schedules()
+        schedules = local_manager.list_schedules()
 
     def test_describe_schedule(self):
         """
