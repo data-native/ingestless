@@ -31,7 +31,7 @@ class Manager:
     def __init__(self):
         self.models =  Models
         self.requests = RequestModels
-        self._registered_lambdas = {} 
+        self._registered_functions = {} 
         self._config_manager = ConfigManager()
         self._backend = DatabaseHandler() 
         self._provider = self._init_provider()
@@ -65,7 +65,7 @@ class Manager:
         try:
             logger.info(f"Registering FunctionModel object {function}")
             function.save()
-            self._registered_lambdas[function.name] = function
+            self._registered_functions[function.name] = function
         except Exception as e:
             raise(e)
             #TODO: Log exception
@@ -106,8 +106,17 @@ class Manager:
         Describe a specific function
         """
         try:
-            function = self._provider.describe_function(name)
-            return function
+            function_provider = self._provider.read_function(name)
+            function_meta = self._backend.read_function(name)
+            function_meta.schedule = pickle.loads(function_meta.schedule)
+            function_meta = function_meta.__dict__['attribute_values']
+
+            #Subset the entries to the relevant fields
+            function_meta = {key: item for key, item in function_meta.items() if key in ['app', 'name', 'attributes', 'schedule']}
+            function_provider = function_provider['Configuration']
+
+            return function_meta | function_provider 
+
         except Exception as e:
             raise(e)
 
@@ -169,7 +178,9 @@ class Manager:
         Allows to set the schedule to None to effectively remove the schedule
         from the function.
         """
+        from cron_converter import Cron
         from manager.types import AWSRuleItem
+
         from manager.provider.AWS import utils as AWSUtils 
         try:
             function = FunctionModel.get(function_hk)
@@ -178,7 +189,9 @@ class Manager:
             if schedule:
                 # Update the schedule instance on the backend
                 schedule.update(actions=[self.models.SCHEDULE.associated.set(self.models.SCHEDULE.associated.append([function_hk]))])
-            
+                if not isinstance(schedule.cron, Cron):
+                    schedule.cron = pickle.loads(schedule.cron)
+                
                 #TODO: Simplify logic with passing dict and pickle loading 
                 rule = AWSRuleItem(
                    Name=schedule.name,

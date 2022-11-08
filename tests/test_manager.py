@@ -45,6 +45,8 @@ test_data1 = {
         "name": "test"
     },
 }
+
+# FUNCTIONS_________________
 @pytest.mark.parametrize(
     "function_name, body, expected",
     [
@@ -68,11 +70,8 @@ def test_register_function(local_manager: Manager):
             "whatever": "works"
         }
     ))
-    assert name in local_manager._registered_lambdas
+    assert name in local_manager._registered_functions
 
-
-def test_unregister_function(local_manager):
-    local_manager.unregister_lambda('testlambda')
 
 def test_list_functions(local_manager):
     functions = local_manager.list_functions()
@@ -121,8 +120,20 @@ def test_unregister_function(local_manager: Manager):
     response = local_manager.unregister_function(function.name)
     assert response
 
+def test_describe_function(local_manager: Manager):
+    """
+    Ensure a function description unified from backend provider
+    details and orchestrator state specifics is returned
+    """
+    # Setup
+    functions = local_manager.list_functions()
+    function = functions[0] 
+    # Function call
+    response = local_manager.describe_function(function['FunctionName'])
+    assert isinstance(response, dict)
 
 
+# HELPERS________________________
 def test_list_options():
     raise NotImplementedError
 

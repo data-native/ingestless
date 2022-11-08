@@ -74,8 +74,8 @@ class AWSProvider(BackendProvider):
         functions = self.get_client(Services.Function).list_functions()
         return functions['Functions']
     
-    def describe_function(self, name: str) -> Dict:
-        function = self.get_client(Services.Function).describe_function(name)
+    def read_function(self, name: str) -> Dict:
+        function = self.get_client(Services.Function).get_function(FunctionName=name)
         return function
     
     # EVENTS__________________-

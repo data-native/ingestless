@@ -143,13 +143,13 @@ def associate_schedule_to_function(
         'intro': 'Select applications to schedule',
         'prompt': 'Select functions as list',
         'choices': {f.name: {}  for f in functions },
-        'type': int
+        'type': str
     }
     selected_function_idx = display_selection(selection_options)
+    selected_function_idx = utils.get_argument_list(selected_function_idx, type=int)
 
+    typer.confirm(f"So you want to schedule functions: {selected_function_idx}")
     # Get the selected funtions
-    selected_function = functions[selected_function_idx]
-    logger.info("Selected functions", selected_function)
     # Prompt selection of 1) CRON direct to create new schedule 2) Select existing
     schedule_options = {
         'intro': "Select your schedule",
@@ -160,7 +160,7 @@ def associate_schedule_to_function(
         },
         'type': int
     }
-    # Select a schedule to apply
+
     schedule = None 
     while not schedule: 
         method = display_selection(schedule_options)
@@ -185,16 +185,31 @@ def associate_schedule_to_function(
                 typer.secho("Create new schedule", fg='green')
                 name = typer.prompt(">> Name: ")
                 cron = Cron(typer.prompt(">> CRON schedule [mhdwy]: ", type=str))
-                logger.debug("Created cron dumps to binary ")
-                schedule = ScheduleModel(name, cron=cron, associated=[selected_function])
+                schedule = ScheduleModel(name, cron=cron, associated=[])
                 registration_status = manager.register_schedule(schedule)
-        
-    # Associate schedule with all functions that have been selected
-    manager.schedule_function(schedule, function_hk=selected_function.name)
 
-    # for function in selected_functions:
-        # manager.schedule_function(schedule, function)
+    for idx in selected_function_idx:
+        selected_function = functions[idx]
+        logger.info("Selected functions", selected_function)
 
+        #TODO: Ensure schedule objects gets updated associated functions
+        manager.schedule_function(schedule, function_hk=selected_function.name)
+
+@function_app.command("describe") 
+def describe_function(
+    name: str = typer.Option(
+        '',
+        "--name",
+        "-n",
+        help="Name of the function to describe"
+    )):
+    """
+    Describes the details for a chosen function
+    """
+    import json
+    function = manager.describe_function(name)
+    typer.echo(json.dumps(function, indent=4))
+    
 
 #  HELPERS_____________
 def display_schedules(schedules: List[ScheduleModel]) -> StatusCode:
@@ -281,22 +296,26 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
             # typer.Exit(0)
             # return
     # TODO: Display results as table
-    headers = ["#", "App","Name","FunctionHandler", "Runtime", "[mhdWmY]"]
+    headers = ["#", "App","Name","FunctionHandler", "Runtime", "Schedule","[mhdWmY]", "Status"]
     result_table = []
     
     scope = "" if app == '' else f"for {app}"
     title = f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(registered_functions)} Functions {scope}"
     typer.secho(title, fg='blue')
     # Display each result in newline with index for selection
+    cron = ''
+    schedule_name = ''
     for function in registered_functions:
-        cron = ''
+        # Get the details for the associated schedule
+        status = 'NOT SET'
         if function.schedule:
             schedule = pickle.loads(function.schedule)
             if schedule.cron and isinstance(schedule.cron, bytes):
                 cron_converter = pickle.loads(schedule.cron)
                 cron = cron_converter.to_string()
-        else:
-            cron = "-"         
-        result_table.append([function.app, function.name, function.attributes.get('Handler', 'Not set'), function.attributes.get('Runtime', 'Not Set'), cron])
+            else:
+                cron = schedule.cron.to_string()
+            schedule_name = schedule.name
+        result_table.append([function.app, function.name, function.attributes.get('Handler', 'Not set'), function.attributes.get('Runtime', 'Not Set'), schedule_name, cron, status])
     typer.echo(tabulate(result_table, headers=headers, showindex='always'))
     return registered_functions

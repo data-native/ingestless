@@ -29,3 +29,9 @@ def test_function_remove():
     # Call functions
     result = runner.invoke(app, ['functions', 'remove'], input='0\n')
     assert result.exit_code == 0
+
+# HELPERS__________
+def test_display_registered_functions():
+    from manager.cli.functions_cli import display_registered_functions
+    response = display_registered_functions()
+    assert isinstance(response, list)
