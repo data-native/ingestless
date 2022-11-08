@@ -161,35 +161,43 @@ class TestFunctionManager:
 
 
 # SCHEDULES _______________________
-def test_register_schedule(local_manager):
-    schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
-    local_manager.register_schedule(schedule)
-
-def test_unregister_schedule(local_manager):
-    # Setup
-    schedule = local_manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
-    local_manager.register_schedule(schedule)
-    # Function call
-    removed_schedule = local_manager.unregister_schedule('test_schedule')
-
-def test_list_schedules(local_manager):
-    schedules = local_manager.list_schedules()
-
-def test_describe_schedule(local_manager: Manager):
-    """
-    Ensure all details about the schedule are queryable from the CLI
-    """
-    # Create a schedule
-    schedule = local_manager.models.SCHEDULE('test_schedule', cron='5 * * * *')
-    local_manager.register_schedule(schedule)
-    schedule = local_manager.describe_schedule(schedule_name=schedule.name)
-
-# TRIGGERS_______________________
-def test_register_trigger(local_manager):
-    trigger = local_manager.register_trigger()
-
-def test_unregister_trigger(local_manager):
-    removed_trigger = local_manager.unregister_trigger()
+class TestScheduleManager:
     
-def test_list_triggers(local_manager):
-    triggers = local_manager.list_triggers()
+    def __init__(self, local_manager: Manager):
+        self.manager = local_manager
+
+    def test_register_schedule(self):
+        schedule = self.manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
+        local_manager.register_schedule(schedule)
+
+    def test_unregister_schedule(self):
+        # Setup
+        schedule = self.manager.models.SCHEDULE('test_schedule', cron=Cron('* * * * *'))
+        local_manager.register_schedule(schedule)
+        # Function call
+        removed_schedule = local_manager.unregister_schedule('test_schedule')
+
+    def test_list_schedules(self):
+        schedules = self.manager.list_schedules()
+
+    def test_describe_schedule(self):
+        """
+        Ensure all details about the schedule are queryable from the CLI
+        """
+        # Create a schedule
+        schedule = local_manager.models.SCHEDULE('test_schedule', cron='5 * * * *')
+        local_manager.register_schedule(schedule)
+        schedule = local_manager.describe_schedule(schedule_name=schedule.name)
+
+    # TRIGGERS_______________________
+    def test_register_trigger(self):
+        raise NotImplementedError
+        trigger = self.manager.register_trigger()
+
+    def test_unregister_trigger(self):
+        raise NotImplementedError
+        removed_trigger = self.manager.unregister_trigger()
+        
+    def test_list_triggers(self):
+        raise NotImplementedError
+        triggers = self.manager.list_triggers()
