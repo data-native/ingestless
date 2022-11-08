@@ -47,95 +47,117 @@ test_data1 = {
 }
 
 # FUNCTIONS_________________
-@pytest.mark.parametrize(
-    "function_name, body, expected",
-    [
-        pytest.param(
-            test_data1["function_name"],
-            test_data1["body"],
-            (test_data1["body"], StatusCode.SUCCESS)
+class TestFunctionManager:
+    
+    def __init__(self, local_manager) -> None:
+        self.manager: Manager = local_manager
+
+    @pytest.mark.parametrize(
+        "function_name, body, expected",
+        [
+            pytest.param(
+                test_data1["function_name"],
+                test_data1["body"],
+                (test_data1["body"], StatusCode.SUCCESS)
+            )
+        ]
+    )
+    def test_register_functions(self, function_name, body, expected):
+        raise NotImplementedError
+        # status = self.manager.register_function(function_name, body)
+        # assert isinstance(status, dict) 
+        # assert isinstance(status["status"], StatusCode)
+
+    def test_register_function(self):
+        name = "Testfunction"
+        local_manager.register_function(local_manager.models.FUNCTION(
+            name,
+            attributes={
+                "whatever": "works"
+            }
+        ))
+        assert name in local_manager._registered_functions
+
+
+    def test_list_functions(self):
+        functions = self.manager.list_functions()
+        assert isinstance(functions, Iterable)
+        assert isinstance(functions[0], dict)
+
+    def test_list_registered_functions(self):
+        #TODO: Extend to create temporary tests in temp local db
+        # local_manager.register_function(local_manager.models.FUNCTION("test", ))
+        functions = self.manager.list_registered_functions() 
+
+        assert isinstance(functions, list)
+        for f in functions:
+            assert all([k in f._get_keys() for k in ['name', 'attributes', 'schedule']])
+
+    def test_schedule_function(self):
+        """
+        Ensure the schedule is stored on the function model, 
+        is registered in the backend provider and is deployed by default
+        """
+        # Preparation
+        function = self.manager.models.FUNCTION('test', attributes={})
+        local_manager.register_function(function)
+        cron = Cron('* 2 * * *', {})
+        schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
+        local_manager.register_schedule(schedule)
+        # Apply schedule
+        schedule_status = local_manager.schedule_function(schedule.name, function_hk='test')
+        assert schedule_status == StatusCode.SUCCESS
+
+    def test_unschedule_function(self):
+        """
+        Ensure the schedule can be reset to None on the 
+        chosen function.
+        """
+        # Set the function
+        function = self.manager.models.FUNCTION('test', attributes={})
+        local_manager.register_function(function)
+        cron = Cron('* 2 * * *', {})
+        schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
+        local_manager.register_schedule(schedule)
+        local_manager.schedule_function(schedule.name, function.name)
+        # Remove the function
+        local_manager.unschedule_function(function.name)
+
+    def test_unregister_function(self):
+        """
+        Ensure the function is properly removed with all
+        dependencies and associations cleaned up
+        """
+        # Prep
+        schedule = self.manager.models.SCHEDULE(
+            name='testschedule',
+            cron = Cron('3 * * * *')
         )
-    ]
-)
-def test_register_functions(local_manager, function_name, body, expected):
-    status = local_manager.register_lambda(function_name, body)
-    assert isinstance(status, dict) 
-    assert isinstance(status["status"], StatusCode)
+        function = local_manager.models.FUNCTION('empheral', 
+        attributes={},
+        schedule = pickle.dumps(schedule)
+        )
+        local_manager.register_function(function)
+        # Function call
+        response = local_manager.unregister_function(function.name)
+        assert response
 
-def test_register_function(local_manager: Manager):
-    name = "Testfunction"
-    local_manager.register_function(local_manager.models.FUNCTION(
-        name,
-        attributes={
-            "whatever": "works"
-        }
-    ))
-    assert name in local_manager._registered_functions
-
-
-def test_list_functions(local_manager):
-    functions = local_manager.list_functions()
-    assert isinstance(functions, Iterable)
-    assert isinstance(functions[0], dict)
-
-def test_list_registered_functions(local_manager: Manager):
-    #TODO: Extend to create temporary tests in temp local db
-    # local_manager.register_function(local_manager.models.FUNCTION("test", ))
-    functions = local_manager.list_registered_functions() 
-
-    assert isinstance(functions, list)
-    for f in functions:
-        assert all([k in f._get_keys() for k in ['name', 'attributes', 'schedule']])
-
-def test_schedule_function(local_manager: Manager):
-    """
-    Ensure the schedule is stored on the function model, 
-    is registered in the backend provider and is deployed by default
-    """
-    # Preparation
-    function = local_manager.models.FUNCTION('test', attributes={})
-    local_manager.register_function(function)
-    cron = Cron('* 2 * * *', {})
-    schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
-    # Apply schedule
-    schedule_status = local_manager.schedule_function(schedule, function_hk='test')
-    assert schedule_status == StatusCode.SUCCESS
-
-def test_unregister_function(local_manager: Manager):
-    """
-    Ensure the function is properly removed with all
-    dependencies and associations cleaned up
-    """
-    # Prep
-    schedule = local_manager.models.SCHEDULE(
-        name='testschedule',
-        cron = Cron('3 * * * *')
-    )
-    function = local_manager.models.FUNCTION('empheral', 
-    attributes={},
-    schedule = pickle.dumps(schedule)
-    )
-    local_manager.register_function(function)
-    # Function call
-    response = local_manager.unregister_function(function.name)
-    assert response
-
-def test_describe_function(local_manager: Manager):
-    """
-    Ensure a function description unified from backend provider
-    details and orchestrator state specifics is returned
-    """
-    # Setup
-    functions = local_manager.list_functions()
-    function = functions[0] 
-    # Function call
-    response = local_manager.describe_function(function['FunctionName'])
-    assert isinstance(response, dict)
+    def test_describe_function(self):
+        """
+        Ensure a function description unified from backend provider
+        details and orchestrator state specifics is returned
+        """
+        # Setup
+        functions = self.manager.list_functions()
+        function = functions[0] 
+        # Function call
+        response = self.manager.describe_function(function['FunctionName'])
+        assert isinstance(response, dict)
 
 
-# HELPERS________________________
-def test_list_options():
-    raise NotImplementedError
+    # HELPERS________________________
+    def test_list_options(self):
+        raise NotImplementedError
 
 
 # SCHEDULES _______________________
@@ -161,6 +183,7 @@ def test_describe_schedule(local_manager: Manager):
     schedule = local_manager.models.SCHEDULE('test_schedule', cron='5 * * * *')
     local_manager.register_schedule(schedule)
     schedule = local_manager.describe_schedule(schedule_name=schedule.name)
+
 # TRIGGERS_______________________
 def test_register_trigger(local_manager):
     trigger = local_manager.register_trigger()
