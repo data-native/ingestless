@@ -71,7 +71,7 @@ def function_create(
 
     # typer.secho(f"Putting function {arn} under orchestration")
     
-@function_app.command("list")
+@function_app.command("list-available")
 def list_all_functions(
     stack_name: str = typer.Option(
         'test',
@@ -90,7 +90,7 @@ def list_all_functions(
     """Retrieve the list of all lambdas for the given stack"""
     display_functions(attributes=attributes)
 
-@function_app.command("list-registered")
+@function_app.command("list")
 def list_all_registered(
     app: str = typer.Option(
         '',
@@ -146,7 +146,10 @@ def associate_schedule_to_function(
     selection_options = {
         'intro': 'Select applications to schedule',
         'prompt': 'Select functions as list',
-        'choices': {f.name: {}  for f in functions },
+        'choices': {f.name: {
+            'attributes': [f.name, f.status, f.schedule, f.schedule],
+        }  for f in functions},
+        'headers': ['idx', 'Function Name', 'Status', 'Schedule', 'CRON'],
         'type': str
     }
     selected_function_idx = display_selection(selection_options)
@@ -160,13 +163,18 @@ def associate_schedule_to_function(
         'prompt': "",
         'choices': {
             'existing schedules': {},
-            'ad-hoc CRON': {}
+            'ad-hoc CRON': {},
+            'unschedule': {},
+            'flipStatus': {},
         },
+        'headers': ['idx', 'Option'],
         'type': int
     }
 
-    schedule = None 
-    while not schedule: 
+    selected = None 
+    method = None
+    schedule = None
+    while not selected: 
         method = display_selection(schedule_options)
         if method == 0:
             # Ensure schedules are available to select from
@@ -178,6 +186,7 @@ def associate_schedule_to_function(
             # Make a selection which one to apply
             schedule_idx = typer.prompt("Select a schedule to apply: ", type=int)
             schedule = schedules[schedule_idx]
+            selected = True
         elif method == 1 : 
             # Create a Schedule object with new cron
             registration_status = None
@@ -190,13 +199,23 @@ def associate_schedule_to_function(
                 cron = Cron(typer.prompt(">> CRON schedule [mhdwy]: ", type=str))
                 schedule = ScheduleModel(name, cron=cron, associated=[])
                 registration_status = manager.register_schedule(schedule)
+            selected = True
+        elif method == 2 or method == 3:
+            # TODO: Find a way to include method 2/3 into scheduling operation
+            selected = True
 
     for idx in selected_function_idx:
         selected_function = functions[idx]
         logger.info("Selected functions", selected_function)
-
-        #TODO: Ensure schedule objects gets updated associated functions
-        manager.schedule_function(schedule.name, function_hk=selected_function.name)
+        if method == 0 or method == 1:
+            manager.schedule_function(schedule.name, function_hk=selected_function.name)
+        elif method == 2:
+            # Unschedule a function
+            manager.unschedule_function(selected_function.name)
+        elif method == 3:
+            # Flip schedules
+            manager.toggle_event_status(selected_function.name)
+        typer.Exit(0)
 
 @function_app.command("describe") 
 def describe_function(
@@ -251,7 +270,11 @@ def display_selection(options: Dict):
     """
     new_line = '\n'
     typer.secho(f"{new_line}{options['intro']}{new_line}", fg="blue")
-    typer.echo(tabulate([[option] for option in options['choices']],headers=['idx', 'Function Name'], showindex='always'))
+    if any(['attributes' in option for option in options['choices'].values()]):
+        typer.echo(tabulate([v['attributes']  for k,v in options['choices'].items()],headers=options['headers'], showindex='always'))
+    else:
+        typer.echo(tabulate([[choice] for choice in options['choices']],headers=options['headers'], showindex='always'))
+
     # for idx, (option, attrs) in options['choices'].items():
         # typer.secho(f'{idx}:: {option}')
     selection = typer.prompt(f"{new_line}>> {options['prompt']}:  ", type=options.get('type', str))

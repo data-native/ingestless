@@ -1,7 +1,13 @@
+import pytest
 from typer.testing import CliRunner
+from manager.manager import Manager
 from manager.cli.cli import app
 
 runner = CliRunner()
+
+@pytest.fixture
+def manager() -> Manager:
+    return Manager()
 
 def test_list_functions():
     result = runner.invoke(app, ["functions", "list"])
@@ -35,3 +41,18 @@ def test_display_registered_functions():
     from manager.cli.functions_cli import display_registered_functions
     response = display_registered_functions()
     assert isinstance(response, list)
+
+def test_display_selection(manager: Manager):
+    from manager.cli.functions_cli import display_selection
+    functions = manager.list_registered_functions()
+    selection_options = {
+        'intro': 'Select applications to schedule',
+        'prompt': 'Select functions as list',
+        'choices': {f.name: {
+            'attributes': [f.name, f.status, f.schedule.name, f.schedule.cron.to_string()],
+        }  for f in functions},
+        'headers': ['idx', 'Function Name', 'Status', 'Schedule', 'CRON'],
+        'type': str
+    }
+    response = display_selection(selection_options)
+    assert functions

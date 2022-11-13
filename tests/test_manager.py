@@ -3,13 +3,16 @@ import pickle
 from typing import Iterable
 import pytest
 
+from random import randint
 from cron_converter import Cron
 from typer.testing import CliRunner
 
 from manager.database import DatabaseHandler
 from manager.enums import StatusCode
+from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.types import ScheduleItem
 from manager.manager import Manager
+
 
 runner = CliRunner()
 
@@ -23,6 +26,48 @@ def local_db():
 @pytest.fixture(autouse=True)
 def local_manager(local_db):
     return Manager() 
+
+@pytest.fixture()
+def function(local_manager: Manager):
+    functions = local_manager.list_functions()
+    function = functions[0]
+    function = local_manager.models.FUNCTION(
+            name=function['FunctionName'],
+            resourceId=function['FunctionArn'],
+            attributes = function,
+            schedule = None,
+            status = None,
+        )
+    return function
+
+@pytest.fixture()
+def registered_function(local_manager: Manager) -> FunctionModel:
+    functions = local_manager.list_functions()
+    function = functions[randint(0, len(functions)-1)]
+    function = local_manager.models.FUNCTION(
+            name=function['FunctionName'],
+            resourceId=function['FunctionArn'],
+            attributes = function,
+            schedule = None,
+            status = None,
+        )
+    status = local_manager.register_function(function)
+
+    return function
+
+@pytest.fixture()
+def schedule(local_manager: Manager):
+    cron = Cron('* 2 * * *', {})
+    schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
+    local_manager.register_schedule(schedule)
+    return schedule
+
+#TODO: Add a scheduled_function fixture
+@pytest.fixture()
+def scheduled_function(local_manager: Manager, schedule, registered_function: FunctionModel):
+    local_manager.schedule_function(schedule.name, registered_function.name)
+    return registered_function
+
 
 @pytest.fixture
 def mock_json_file(tmp_path):
@@ -64,17 +109,11 @@ class TestFunctionManager:
         # assert isinstance(status, dict) 
         # assert isinstance(status["status"], StatusCode)
 
-    def test_register_function(self, local_manager: Manager):
-        functions = local_manager.list_functions()
-        function = functions[0]
-        local_manager.register_function(local_manager.models.FUNCTION(
-            function['FunctionName'],
-            resourceId=function['FunctionArn'],
-            attributes=function
-        ))
-        assert function['FunctionName'] in local_manager._registered_functions
+    def test_register_function(self, local_manager: Manager, function: FunctionModel):
+        local_manager.register_function(function)
+        assert function.name in local_manager._registered_functions
         # Cleanup
-        local_manager.unregister_function(function['FunctionName'])
+        local_manager.unregister_function(function.name)
 
 
     def test_list_functions(self, local_manager: Manager):
@@ -86,77 +125,67 @@ class TestFunctionManager:
         #TODO: Extend to create temporary tests in temp local db
         # local_manager.register_function(local_manager.models.FUNCTION("test", ))
         functions = local_manager.list_registered_functions() 
-
         assert isinstance(functions, list)
-        for f in functions:
-            assert all([k in f._get_keys() for k in ['name', 'attributes', 'schedule']])
+        assert all([isinstance(f, FunctionModel) for f in functions])
 
-    def test_schedule_function(self, local_manager: Manager):
+    def test_schedule_function(self, local_manager: Manager, schedule: ScheduleModel, registered_function: FunctionModel):
         """
         Ensure the schedule is stored on the function model, 
         is registered in the backend provider and is deployed by default
         """
-        # Preparation
-        function = local_manager.models.FUNCTION('test', attributes={})
-        local_manager.register_function(function)
-        cron = Cron('* 2 * * *', {})
-        schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
-        local_manager.register_schedule(schedule)
         # Apply schedule
-        schedule_status = local_manager.schedule_function(schedule.name, function_hk='test')
+        schedule_status = local_manager.schedule_function(schedule.name, function_hk=registered_function.name)
         assert schedule_status == StatusCode.SUCCESS
+        updated_function = local_manager.describe_function(registered_function.name)
+        assert isinstance(updated_function['schedule'], ScheduleModel)
+        assert updated_function['schedule'].name == schedule.name, ""
+        assert updated_function['status'] == 'ENABLED', "Schedule set must be set to ENABLED"
 
-    def test_unschedule_function(self, local_manager: Manager):
+
+    def test_unschedule_function(self, local_manager: Manager, schedule: ScheduleModel, registered_function: FunctionModel):
         """
         Ensure the schedule can be reset to None on the 
         chosen function.
         """
         from manager.enums import Services
-        # Set the function
-        function = local_manager.models.FUNCTION('test', attributes={})
-        local_manager.register_function(function)
-        cron = Cron('* 2 * * *', {})
-        schedule = local_manager.models.SCHEDULE('testschedule', cron=cron)
-        local_manager.register_schedule(schedule)
-        local_manager.schedule_function(schedule.name, function.name)
-        # Remove the function
-        response = local_manager.unschedule_function(function.name)
-        assert response.SUCCESS
-        assert local_manager._provider.list_rules_by_target(
+        # Remove the schedule from the function
+        response = local_manager.unschedule_function(registered_function.name)
+        assert response.SUCCESS, "Function must correctly complete with StatusCode.SUCCESS"
+        rules = local_manager._provider.list_rules_by_target(
             type=Services.Function,
-            target=function.name)
-    def test_unregister_function(self, local_manager: Manager):
+            target=registered_function.name)
+        rules = rules['RuleNames']
+        #TODO: Check that the function model no longer has a schedule associated
+        assert schedule.name not in rules, "Schedule must be removed from the event routing rules for the function"
+        function_names = [fun['FunctionName'] for fun in local_manager.list_functions()]
+        assert registered_function.name in function_names, "Unscheduled function must still exist as a function"
+        registered_function_names = [fun.name for fun in local_manager.list_registered_functions()]
+        assert registered_function.name in registered_function_names, "Unscheduled function must still be registered in the system"
+
+
+    def test_unregister_function(self, local_manager: Manager, registered_function: FunctionModel):
         """
-        Ensure the function is properly removed with all
+        Ensure the function is properly removed with alle
         dependencies and associations cleaned up
         """
-        # Prep
-        schedule = local_manager.models.SCHEDULE(
-            name='testschedule',
-            cron = Cron('3 * * * *')
-        )
-        function = local_manager.models.FUNCTION('empheral', 
-        attributes={},
-        schedule = pickle.dumps(schedule)
-        )
-        local_manager.register_function(function)
-        # Function call
-        response = local_manager.unregister_function(function.name)
-        assert response
+        response = local_manager.unregister_function(registered_function.name)
+        assert response.SUCCESS, "Function 'unregister_function' must complete correctly with StatusCode.SUCCESS"
+        functions = local_manager.list_functions()
+        assert registered_function.name not in functions, "Function should be deleted from the database table"
+        assert registered_function.name not in local_manager._registered_functions, "Function should be removed from manager registration state"
 
-    def test_describe_function(self, local_manager: Manager):
+
+    def test_describe_function(self, local_manager: Manager, function: FunctionModel):
         """
         Ensure a function description unified from backend provider
         details and orchestrator state specifics is returned
         """
-        # Setup
-        functions = local_manager.list_functions()
-        function = functions[0] 
         # Function call
-        response = local_manager.describe_function(function['FunctionName'])
+        response = local_manager.describe_function(function.name)
         assert isinstance(response, dict)
-
-    # 
+        assert 'attributes' in response, "Must contain the 'attributes' dict containing the function parameters from the backend"
+        assert 'resourceId' in response, "Must contain a resourceId parameter by default"
+        assert response['name'] == function.name
 
     # HELPERS________________________
     def test_list_options(self, local_manager: Manager):
@@ -180,14 +209,12 @@ class TestScheduleManager:
     def test_list_schedules(self, local_manager: Manager):
         schedules = local_manager.list_schedules()
 
-    def test_describe_schedule(self, local_manager: Manager):
+    def test_describe_schedule(self, local_manager: Manager, schedule: ScheduleModel, scheduled_function: FunctionModel):
         """
         Ensure all details about the schedule are queryable from the CLI
         """
-        # Create a schedule
-        schedule = local_manager.models.SCHEDULE('test_schedule', cron='5 * * * *')
-        local_manager.register_schedule(schedule)
         schedule = local_manager.describe_schedule(schedule_name=schedule.name)
+        assert schedule
 
     # TRIGGERS_______________________
     def test_register_trigger(self, local_manager: Manager):

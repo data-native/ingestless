@@ -91,4 +91,6 @@ def reset(
         logger.debug('Successfully dropped application tables')
         reset_status = config._reset_database()
         logger.debug('Completed application reset') 
+        typer.secho("Dropping associated backend instance")
+        config._reset_backend()
     typer.Exit(0)
