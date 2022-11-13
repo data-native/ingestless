@@ -85,6 +85,7 @@ class Manager:
             # If successfully, remove the function
 
             self._backend.delete_function(name)
+            self._registered_functions.pop(name)
             return StatusCode.SUCCESS
         except Exception as e:
             logger.exception(f"Unregistering function {function.name} raised")
@@ -121,22 +122,27 @@ class Manager:
         except Exception as e:
             raise(e)
 
-    def describe_function(self, name:str) -> dict:
+    def describe_function(self, 
+        name:str,
+        params: List[str] = [],
+        ) -> dict:
         """
         Describe a specific function
+        @params: The list of strings identifying the attributes to describe 
         """
         try:
             function_provider = self._provider.read_function(name)
             function_meta = self._backend.read_function(name)
             if function_meta.schedule:
-                function_meta.schedule = pickle.loads(function_meta.schedule)
+                function_meta.schedule = function_meta.schedule
             function_meta = function_meta.__dict__['attribute_values']
 
             #Subset the entries to the relevant fields
-            function_meta = {key: item for key, item in function_meta.items() if key in ['app', 'name', 'attributes', 'schedule']}
+            if params:
+                function_meta = {key: item for key, item in function_meta.items() if key in params}
             function_provider = function_provider['Configuration']
-
-            return function_meta | function_provider 
+            function_meta['attributes'] = function_meta['attributes'] | function_provider
+            return function_meta 
 
         except Exception as e:
             raise(e)
@@ -192,7 +198,7 @@ class Manager:
         except Exception as e:
             raise(e)
 
-    def schedule_function(self, schedule_id: str, function_hk: str, function_sk: str = '') -> StatusCode:
+    def schedule_function(self, schedule_id: str, function_hk: str) -> StatusCode:
         """
         Applies a registered schedule to the function.
         #TODO: Generalize for multiple providers by moving out the provider logic into provider class
@@ -222,20 +228,22 @@ class Manager:
             logger.exception("Exception updating function with schedule", e)
             return StatusCode.DB_WRITE_ERROR
     
-    def unschedule_function(self, name: str) -> StatusCode:
+    def unschedule_function(self, function: Union[str, FunctionModel]) -> StatusCode:
         """
         Removes the schedule from the given function 
         """
+        function_model: FunctionModel = function if isinstance(function, FunctionModel) else self._backend.read_function(function)
+        if not function_model.schedule:
+            return StatusCode.SUCCESS
         try:
-            function = self._backend.read_function(name)
-            rule_name = function.schedule.name
+            rule_name = function_model.schedule.name
 
             # Remove rule
-            self._backend.unset_schedule(target=self.models.FUNCTION, target_id=name)
+            self._backend.unset_schedule(target=self.models.FUNCTION, target_id=function_model.name)
             response = self._provider.remove_event_targets(
-                rule=function.schedule.name,
+                rule=function_model.schedule.name,
                 type=self.models.FUNCTION,
-                targets=name
+                targets=function_model.name
             )
             # Check that there are still functions asscoiated otherwise disable the rule
             active_targets = self._provider.list_targets_by_rule(rule_name)
@@ -243,9 +251,20 @@ class Manager:
                 self._provider.disable_rule(rule_name)
             return StatusCode.SUCCESS
         except Exception as e:
-            logger.exception(f"Removing schedule from function {name}")
+            logger.exception(f"Removing schedule from function {function_model}")
             return StatusCode.DB_WRITE_ERROR
 
+    def toggle_event_status(self, name: str) -> StatusCode:
+        """
+        Toggles the event status, pausing or starting the schedule trigger for
+        a given function.
+        """ 
+        try:
+            function = self._backend.read_function(name)
+            self._backend.toggle_schedule(target= self.models.FUNCTION, target_id=function.schedule.name)
+        except Exception as e:
+            raise(e)
+        return StatusCode.SUCCESS
     # TRIGGER_________________________
     def register_trigger(self, trigger: Models.TRIGGER) -> StatusCode:
         """
