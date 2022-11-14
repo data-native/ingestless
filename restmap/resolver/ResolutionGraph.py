@@ -1,23 +1,8 @@
 """
 
 """
-
-class Node:
-
-    def __init__(self) -> None:
-        pass
-
-class Endpoint(Node):
-    """
-    Represents a logical REST endpoint in the computation
-    graph. Parametrization on this node can either be hardcoded, 
-    or provided through a resolver instance.
-    """
-
-    def __init__(self) -> None:
-        
-        super().__init__()
-    
+from typing import List
+from restmap.resolver.nodes import EndpointNode, ParamNode, ResolverNode, BaseNode
 
 class ResolutionGraph:
     """
@@ -26,17 +11,33 @@ class ResolutionGraph:
     assets in a given endpoint workflow.
     """
 
+    #TODO: Register all elements into execution chains if they are dependent
+    #TODO: Ensure iterative execution is enabled on all Nodes
+    
     def __init__(self) -> None:
-        pass
+        self.head = None
+        self.resolvers: List[ResolverNode.ResolverNode] = []
+        self.params: List[ParamNode.ParamNode] = []
+        self.endpoints: List[EndpointNode.EndpointNode] = []
     
-    def add_endpoint(self, endpoint: dict):
-        raise NotImplementedError
+    def add_endpoint(self, endpoint: EndpointNode.EndpointNode) -> None:
+        """
+        Adds an endpoint Node to the graph
+        """
+        self.endpoints.append(endpoint)
     
-    def add_resolver(self, resolver: dict):
-        raise NotImplementedError
-    
-    def add_parameter(self, param: dict):
-        raise NotImplementedError
+    def add_resolver(self, resolver: ResolverNode.ResolverNode):
+        """
+        Add a resolver Node to the graph
+        """
+        self.resolvers.append(resolver)
+        
+    def add_parameter(self, param: ParamNode.ParamNode):
+        """
+        Add a parameter nod to the graph
+        """
+        self.params.append(param)
+
     
     def __repr__(self) -> str:
         #TODO: Represent in tabular format

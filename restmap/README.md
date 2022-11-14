@@ -36,10 +36,13 @@ Feature | Subcomponent
 Check the validity of a template | SchemaParser
 Report sections not compliant with the expected schema | SchemaParser
 ## Resolver 
-Resolves
+Resolves the TemplateSchema into an unoptimized execution graph
+
 
 Feature | Subcomponent 
 ------ | ----------
+Resolve all components into a schedulable graph | 
 
 ## Scheduler
+Optimizes the execution schedule of the TemplateSchema for a given selected backend.
 

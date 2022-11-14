@@ -5,7 +5,9 @@ from .ParamNode import ParamNode
 @dataclass
 class EndpointNode(BaseNode):
     """
-    Represents an endpoint in the computation graph 
+    Represents a logical REST endpoint in the computation
+    graph. Parametrization on this node can either be hardcoded, 
+    or provided through a resolver instance.
     """
     base_url: str
     params: list[ParamNode]

@@ -31,7 +31,6 @@ class Resolver:
         # 
         raise NotImplementedError
     
-    def
 
 
     
