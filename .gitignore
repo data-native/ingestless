@@ -1,5 +1,6 @@
 python*
 .venv
-.pytest_cache
+*/**/.pytest_cache
+
 .vscode
-__pycache__
+*/**/__pycache__
