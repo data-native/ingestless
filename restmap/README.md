@@ -29,8 +29,6 @@ Register expected state based on new component | StateManager
 Return expected state | StateManger
 Retrieve current state from backend provider | StateManager
 Compare current and existing state | StateManager
-
-
 ## TemplateParser
 Provides a yaml based, declarative way to create resources. Keeps a backend state to manage deployments and version history to manage roll backs on the ingestion declarations for given endpoints. 
 
@@ -38,15 +36,11 @@ Feature | Subcomponent
 ------ | ----------
 Check the validity of a template | SchemaParser
 Report sections not compliant with the expected schema | SchemaParser
-
-
-
 ## Resolver 
-Resolves 
+Resolves
 
 Feature | Subcomponent 
 ------ | ----------
-
 
 ## Scheduler
 

@@ -15,6 +15,7 @@ further for scheduling.
 from pathlib import Path
 from typing import Union, List, Dict
 
+from utils import io as ioutils
 
 class TemplateSchema:
     """
@@ -35,16 +36,26 @@ class TemplateParser:
         """
         Attempts to verify and load a Template from a given file location.
         """
+        path = ioutils.ensure_path(path)
         # Load the file
+        try:
+            file = path.read_text() 
 
+            if self.lints(file):
+                schema = self._validate(file)
+                template = self._parse(schema)
+                # Load all components and lint component schemata
+                for k,v in template.items():
+                    template[k] = self.compile_component(component=k, attributes=v)
+        except FileNotFoundError:
+            return StatusCode.File
         # Lint the content string
-
         # Validate required components are defined
+                
+        return TemplateSchema()
 
-        # Load all components and lint component schemata
-
-        # Return TemplateSchema
-        raise NotImplementedError
-
-    
+    # INTERNAL API_______________-
+    def _read_file(path: Path) -> File:
+        """
+        """
     
