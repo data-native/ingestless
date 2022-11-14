@@ -1,10 +1,10 @@
 import logging
 import pickle
-from manager.enums import StatusCode, RequestModels
+from enums import StatusCode, RequestModels
 from manager.database import DatabaseHandler
 from typing import Iterator, List, Dict, Any, Optional, Tuple, Union
 
-from manager.enums import Provider
+from enums import Provider
 from manager.provider.AWS.AWSProvider import AWSProvider
 from manager.models import TriggerModel, ScheduleModel, FunctionModel
 from manager.config import ConfigManager

@@ -1,20 +1,21 @@
-Version: 2022-10-01
+version: '2022-10-03'
 kind: Endpoint
 metadata:
     name: banking_data_api
 config:
     endpoints:
-        baseurl:
+        - baseurl:
+            kind: baseurl
             url: management.azure.com/{scope}
             params:
-                scope:
+                - scope:
                     name: scope
-        reservationlist:
-            relativeurl:
+        - reservationlist:
+            kind: relativeurl
             base: baseurl
             relative: /providers/Microsoft.Capicity/reservation
             params:
-                reservationOrderId:
+                - reservationOrderId:
                     param: reservationOrderId
     params:
         reservationOrderId:

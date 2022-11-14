@@ -6,7 +6,7 @@ from botocore import client as botoclient
 
 from manager.models import FunctionModel
 from manager.database import DatabaseHandler
-from manager.enums import StatusCode, Services
+from enums import StatusCode, Services
 from manager.manager import Manager
 from manager.provider.AWS.AWSProvider import AWSProvider
 

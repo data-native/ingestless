@@ -1,6 +1,54 @@
 """
 State Manager class
 """
+from enums import StatusCode
+from dataclasses import dataclass, field
+
+from restmap.templateParser.TemplateParser import TemplateSchema
+
+@dataclass
+class ComponentDict:
+    """
+    Stores the registered components at a specific point
+    in time     
+    """
+    components: dict = field(default_factory=dict)
+     
+@dataclass
+class StateDict:
+    """
+    Manages a changelog of application states
+    with the abbility to revert or replay changes
+    incrementally to recreate the state at any point
+    in time.
+    """
+    components: ComponentDict
+    state: dict = field(default_factory=dict)
+
+    @classmethod
+    def from_template(cls, template: TemplateSchema) -> 'StateDict':
+        
+        components = {}
+        component_dict = ComponentDict(components)
+        state = {}
+        return StateDict(components=component_dict, state=state)
+
+    def get_diff(self, other: 'StateDict'):
+        """
+        Compute the difference between the current and other state
+        dict in terms of additions and removals
+        """
+        # Check if identical and if return early
+
+        # Compute set difference
+
+        # Compute removals
+
+        # Compute additions
+
+        # return removals, additions
+        raise NotImplementedError
+    
 
 class State:
     """
@@ -8,77 +56,67 @@ class State:
     """
 
     def __init__(self) -> None:
-        self._state = {}
-        self._components = {}
+        self._state: dict[int, StateDict] = {}
+        self._current_version: int = 0
     
-    def _initialize_backend(self):
-        """
-        Deploys and configures the state backend storage
-        """
-        raise NotImplementedError
+    @property
+    def components(self):
+        return self._state[self.version].components
+
+    @property
+    def version(self):
+        return self._current_version  
+
+    @version.setter
+    def version(self, version: int):
+        if version <= self.version:
+            raise ValueError("Version number is already used")
+        self._current_version = version
     
-    def _compile_state_diff(self, update):
-        """
-        Compiles the difference between the current local state
-        and the recorded backend state in the application.
+    @property
+    def state(self) -> StateDict:
+        return self._state[self._current_version]
+    @state.setter
+    def state(self, update: TemplateSchema) -> StatusCode:
+        # Check that StateDict is valid
+        updated_state = StateDict.from_template(update)
+        # Compile to 
+        diff = self.state.get_diff(updated_state)
+        if not diff:
+            return StatusCode.FILE_ERROR
 
-        Initially only compares template versions kept in state
-        and not the actual state of the backend.
-        """
-        raise NotImplementedError
+        self._state[self.version + 1] = updated_state
+        return StatusCode.SUCCESS
 
-    def _update_schema(self, update) -> None:
+    def describe(self):
         """
-        Updates the local state based on the update object
-        Keeps a versioned history of state changes.
+        Represent the current state
         """
-        # Ensure there is a difference
-        diff = self._compile_state_diff(update)
-        if diff:
-            curr_version = 0
-            # store as bumped up state version
-            
-            #TODO: Store the differences and implement a replay functionality to roll back/forward the changes
-            self._state[curr_version + 1] = diff
-
-    def roll_back(self, version: int):
+        #TODO: Return a formated string representation
+        return self.state
+    
+    def roll_back(self, version: int) -> StatusCode:
         """
         Reverts the current state back to a previously saved version
         """
         # Ensure version in state versions
-        if not version < self._state.current_version():
+        if not version < self.version:
             raise ValueError("Version is higher than current version {self._state.current_version()}")
 
-    @property
-    def current_version(self):
-        return max(self._state.keys())
+        # Update the version tracking to new version
+        self.version = version
+        # TODO: Ensure old state is applied correctly
+        return StatusCode.SUCCESS
 
-
-    def _add(self, component) -> None:
+    def _initialize_backend(self):
         """
-        Adds a given component to the state management
+        Deploys and configures the state backend storage
         """
-        raise NotImplementedError
-
-    def _remove(self, component):
-        """
-        Removes a given component from state management
-        """
-        # Remove it from local state cleaning up all dependencies
+        # Ensure backend configuration is present
         
-        # Undeploy it 
-        raise NotImplementedError
-    
-    def _get(self, component) -> AnyString:
-        """
-        Retrieves a given component from the state
-        """
+        # Deploy backend resources
 
-
-    def _list_components(self):
-        """
-        Returns the list of maintained components
-        """
+        # Initialize backend storage
         raise NotImplementedError
 
     def _persist(self):

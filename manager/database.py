@@ -3,7 +3,7 @@ import pickle
 from typing import NamedTuple, List, Any, Dict
 from pynamodb.models import MetaModel
 
-from manager.enums import StatusCode, Errors
+from enums import StatusCode, Errors
 from manager.types import FunctionItem
 from manager.models import FunctionModel, ScheduleModel, TriggerModel, Models
 from manager.utils import dynamoutils

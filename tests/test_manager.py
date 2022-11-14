@@ -8,7 +8,7 @@ from cron_converter import Cron
 from typer.testing import CliRunner
 
 from manager.database import DatabaseHandler
-from manager.enums import StatusCode
+from enums import StatusCode
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.types import ScheduleItem
 from manager.manager import Manager
@@ -147,7 +147,7 @@ class TestFunctionManager:
         Ensure the schedule can be reset to None on the 
         chosen function.
         """
-        from manager.enums import Services
+        from enums import Services
         # Remove the schedule from the function
         response = local_manager.unschedule_function(registered_function.name)
         assert response.SUCCESS, "Function must correctly complete with StatusCode.SUCCESS"

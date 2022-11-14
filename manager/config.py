@@ -7,7 +7,7 @@ import textwrap
 from typing import List
 
 from manager import __app_name__
-from manager.enums import StatusCode, Provider
+from enums import StatusCode, Provider
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.provider.AWS.AWSProvider import AWSProvider
 from manager.provider.abstract_provider import BackendProvider

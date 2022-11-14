@@ -4,8 +4,10 @@ Tests the templateparser implementation
 
 import pytest
 import json
+import yaml
+from pathlib import Path
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
-from manager.enums import StatusCode
+from enums import StatusCode 
 
 # FIXTURES
 @pytest.fixture()
@@ -14,15 +16,16 @@ def parser():
 
 @pytest.fixture()
 def template_path():
-    # Get temporary location
-    schema = {
-        #Define schema
-    }
-    schema_str = json.dumps(schema)
+    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
     # Write file to templocation
     # return templocation
 
 # TESTS________________
+def test_validate(parser: TemplateParser, template_path: Path):
+    file = template_path.read_text()
+    template_string = yaml.safe_load(file)
+    parser._validate(template_string)
+
 def test_load(parser: TemplateParser, template_path):
     # Create temp file
     template = parser.load(template_path)
@@ -32,5 +35,5 @@ def test_load(parser: TemplateParser, template_path):
 def test_logic(parser: TemplateParser, template_path):
     # Create an endpoint template
 
+    parser.load(template_path)
     # ``
-    parser.load()

@@ -12,7 +12,7 @@ from typing import Optional, List, Dict, Union
 from botocore.client import BaseClient as BotoClient
 from botocore import exceptions as BotoCoreExceptions
 
-from manager.enums import Services
+from enums import Services
 from manager.types import EventTargetItem
 from manager.provider.abstract_provider import BackendProvider
 

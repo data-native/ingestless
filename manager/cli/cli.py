@@ -4,7 +4,7 @@ import textwrap
 
 from manager import __app_name__, __version__
 from manager import config
-from manager.enums import StatusCode, Errors, Provider
+from enums import StatusCode, Errors, Provider
 
 from manager.cli.trigger_cli import trigger_app
 from manager.cli.functions_cli import function_app

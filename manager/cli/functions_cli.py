@@ -12,7 +12,7 @@ from cron_converter import Cron
 from typing import List, Dict
 from tabulate import tabulate
 
-from manager.enums import StatusCode
+from enums import StatusCode
 from manager.manager import Manager
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.cli import utils

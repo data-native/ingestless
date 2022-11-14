@@ -17,26 +17,33 @@ actual deployment details on a specific backend provider, by compiling all
 activities into the overall serverless abstraction syntax used across the
 ingestless framework.
 """
-from typing import Union, AnyStr
+from typing import Union
 from pathlib import Path
 
+from enums import StatusCode
 from manager.State import State
 from templateParser.TemplateParser import TemplateParser, TemplateSchema
+
+
 class Manager:
+    """
+    
+    """
 
     def __init__(self) -> None:
         self._parser = TemplateParser()
-        self.state = State()
+        self._state = State()
         
-    def register(self, path: Union[str, Path]) -> None:
+    def register(self, path: Union[str, Path]) -> StatusCode:
         """
         Registers a components defined in a given storage location
         """
         # Load the template from the file path given
-        component = self._parser.load(path) 
-        
-        # Add component to local state
-        self.state._add(component)
+        template = self._parser.load(path)
+        # Store updated version
+        self._state.state = template
+        # 
+        return StatusCode.SUCCESS
     
     def validate(self):
         """
@@ -44,14 +51,14 @@ class Manager:
         """
         raise NotImplementedError
 
-    def describe(self, component: str) -> AnyStr:
+    def describe(self, component: str):
         """
         Compiles a description of the component for introspection
         """
         # Prepare the attribute filter
 
         # Get component from state
-        component = self.state._get(component)
+        component = self._state._get(component)
     
     def init(self):
         """

@@ -22,7 +22,6 @@ Scheduler | Optimizes the `resolved graph` into a `schedule` to be send to the b
 Feature | Subcomponent 
 ------ | ----------
 Register a component based on a template doc | Manager
-Unregister a component based on name | Manager
 Describe a component based on name | Manager
 Initialize state for a given folder location | StateManager
 Register expected state based on new component | StateManager
