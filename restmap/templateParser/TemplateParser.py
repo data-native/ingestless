@@ -108,14 +108,3 @@ class TemplateParser:
         return TemplateSchema(
             **template_dict
         )
-           
-    def compile_component(self, component, attributes):
-        """
-        Compile an instance of component type with the given attributes
-        """
-        # TODO: Generalize and refactor _parse to utilize this function
-        # Switch the selected component
-
-        # Instantiate component with attributes
-        return component
-
