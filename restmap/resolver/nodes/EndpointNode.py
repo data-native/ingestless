@@ -9,6 +9,7 @@ class EndpointNode(BaseNode):
     graph. Parametrization on this node can either be hardcoded, 
     or provided through a resolver instance.
     """
+    name: str
     base_url: str
     params: list[ParamNode]
 
