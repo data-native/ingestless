@@ -24,6 +24,7 @@ class StatusCode(Enum):
     DB_WRITE_ERROR = auto()
     JSON_ERROR = auto()
     ID_ERROR = auto()
+    VALUE_ERROR = auto()
 
 
 # Define error messages for all errorCodes
@@ -34,7 +35,7 @@ Errors = {
     StatusCode.DB_WRITE_ERROR: "database write error",
 }
 
-class Service(Enum):
+class Services(Enum):
     """
     List of services orchestrated across backend providers.
     
@@ -45,4 +46,3 @@ class Service(Enum):
     Function = auto()
     StateMachine = auto()
     ServiceBus = auto()
-    Top = auto()

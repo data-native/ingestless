@@ -1,0 +1,43 @@
+version: '2022-10-03'
+kind: Endpoint
+metadata:
+    name: banking_data_api
+config:
+    endpoints:
+        - baseurl:
+            kind: baseurl
+            url: management.azure.com/{scope}
+            params:
+                - scope:
+                    name: scope
+        - reservationlist:
+            kind: relativeurl
+            base: baseurl
+            relative: /providers/Microsoft.Capicity/reservation
+            params:
+                - reservationOrderId:
+                    param: reservationOrderId
+    params:
+        reservationOrderId:
+            name: reservationOrderId
+            type: String
+            resolver: DBReservationLoader
+        scope:
+            name: scope
+            type: String
+            descr: Scope used in retrieval of something
+    resolvers:
+        DBReservationLoader:
+            kind: DatabaseLoader
+            connectionstring: "Some string that should be put into a secret"
+            authentication: 
+                method: NameAndKey
+            table:
+                name: Configuration
+                col: ['Id']
+            
+
+    
+
+
+    

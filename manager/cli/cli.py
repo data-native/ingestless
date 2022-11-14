@@ -4,17 +4,22 @@ import textwrap
 
 from manager import __app_name__, __version__
 from manager import config
-from manager.enums import StatusCode, Errors, Provider
+from enums import StatusCode, Errors, Provider
 
 from manager.cli.trigger_cli import trigger_app
 from manager.cli.functions_cli import function_app
 from manager.cli.schedules_cli import schedule_app
+
+from manager.utils import logutils
 
 # Define the app interface
 app = typer.Typer()
 app.add_typer(function_app, name="functions")
 app.add_typer(schedule_app, name="schedules")
 app.add_typer(trigger_app, name="triggers")
+
+# Define global logger
+logger = logutils.setup_custom_logger('root')
 
 # Define general methods
 def _version_callback(value: bool) -> None:
@@ -50,7 +55,7 @@ def init(
 
     We are getting ready to set up the orchestration manager
     """), fg='green')
-
+    logger.debug('initializing application')
     selected_provider = Provider(int(typer.prompt(
     textwrap.dedent(f""" Please select the backend platform:
     {''.join([f"{new_line}{idx+1}) {provider.name}" for idx, provider in enumerate(Provider)])}
@@ -61,6 +66,7 @@ def init(
     app_config_status = config.config_app(provider=selected_provider)
     # Initializing application based on configuration presets
     app_init_status = config.init_app(provider=selected_provider) 
+    logger.debug('Successfully completed initialization')
     return app_init_status
 
 @app.command('reset')
@@ -73,11 +79,18 @@ def reset(
     Drops all used tables, discarding all historical application 
     state and system logs. 
     """
+    logger.debug('Resetting application')
     confirmation = typer.confirm("Do you want to completely delete the application state?")
     if confirmation:
+        logger.debug('Deleting application state')
         typer.secho("Deleting application state", fg='green')
+        logger.debug('Successfully droped application state')
         config._reset_application()
+        logger.debug('Dropping application tables')
         typer.secho("Dropping application tables", fg='green')
+        logger.debug('Successfully dropped application tables')
         reset_status = config._reset_database()
-        
+        logger.debug('Completed application reset') 
+        typer.secho("Dropping associated backend instance")
+        config._reset_backend()
     typer.Exit(0)
