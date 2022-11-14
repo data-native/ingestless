@@ -75,12 +75,6 @@ class TemplateParser:
         template_dict = yaml.safe_load(file)
         return template_dict
         
-    def lints(self, file) -> bool:
-        """
-        Validate the file is correctly defined as yml
-        """
-        return True
-    
     def _validate(self, template_dict: dict) -> bool:
         """
         Ensure the file template confirms with expected
@@ -98,20 +92,28 @@ class TemplateParser:
             raise e
         return True
 
-                    
-         
-    def _parse(self, template_string: str ) -> TemplateSchema:
+    def _parse(self, template_dict: dict ) -> TemplateSchema:
         """
         Parse a yaml template string into a TemplateSchema instance
-        """
-        # Input is a yaml template file string
-        pass     
         
-    
+        Does currently hardcode the structure of the expected template
+        schema. 
+        """
+        #TODO: Generalize to support multiple versions of template schema
+        # Input is a yaml template file string
+        metadata_dict = MetadataDict(template_dict['metadata'])
+        config_dict = ConfigurationDict(**template_dict['config'])
+        template_dict['metadata'] = metadata_dict
+        template_dict['config'] = config_dict
+        return TemplateSchema(
+            **template_dict
+        )
+           
     def compile_component(self, component, attributes):
         """
         Compile an instance of component type with the given attributes
         """
+        # TODO: Generalize and refactor _parse to utilize this function
         # Switch the selected component
 
         # Instantiate component with attributes

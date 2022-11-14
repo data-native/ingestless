@@ -6,7 +6,7 @@ import pytest
 import json
 import yaml
 from pathlib import Path
-from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
+from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema, MetadataDict, ConfigurationDict
 from enums import StatusCode 
 
 # FIXTURES
@@ -30,6 +30,8 @@ def test_load(parser: TemplateParser, template_path):
     # Create temp file
     template = parser.load(template_path)
     assert isinstance(template, TemplateSchema)
+    assert isinstance(template.metadata, MetadataDict)
+    assert isinstance(template.config, ConfigurationDict)
 
 
 def test_logic(parser: TemplateParser, template_path):
