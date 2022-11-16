@@ -27,9 +27,9 @@ class MetadataDict:
 
 @dataclass 
 class ConfigurationDict:
-    endpoints: list
-    params: list
-    resolvers: list
+    endpoints: dict
+    params: dict 
+    resolvers: dict
 @dataclass
 class TemplateSchema:
     """

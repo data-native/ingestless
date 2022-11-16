@@ -3,8 +3,10 @@ State Manager class
 """
 from enums import StatusCode
 from dataclasses import dataclass, field
+from typing import Union
 
 from restmap.templateParser.TemplateParser import TemplateSchema
+from restmap.resolver.ResolutionGraph import ResolutionGraph
 
 @dataclass
 class ComponentDict:
@@ -12,7 +14,10 @@ class ComponentDict:
     Stores the registered components at a specific point
     in time     
     """
-    components: dict = field(default_factory=dict)
+    endpoints: dict = field(default_factory=dict)
+    resolvers: dict = field(default_factory=dict)
+    params: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
      
 @dataclass
 class StateDict:
@@ -26,11 +31,15 @@ class StateDict:
     state: dict = field(default_factory=dict)
 
     @classmethod
-    def from_template(cls, template: TemplateSchema) -> 'StateDict':
-        
-        components = {}
-        component_dict = ComponentDict(components)
-        state = {}
+    def from_resolutiongraph(cls, template: ResolutionGraph) -> 'StateDict':
+         
+        # Ensure the elements get resolved first
+        component_dict = ComponentDict(
+            endpoints=template.config.endpoints,
+            resolvers=template.config.resolvers,
+            params=template.config.params,
+            metadata=template.metadata
+        )
         return StateDict(components=component_dict, state=state)
 
     def get_diff(self, other: 'StateDict'):
@@ -77,9 +86,9 @@ class State:
     def state(self) -> StateDict:
         return self._state[self._current_version]
     @state.setter
-    def state(self, update: TemplateSchema) -> StatusCode:
+    def state(self, update: ResolutionGraph) -> StatusCode:
         # Check that StateDict is valid
-        updated_state = StateDict.from_template(update)
+        updated_state = StateDict.from_resolutiongraph(update)
         # Compile to 
         diff = self.state.get_diff(updated_state)
         if not diff:

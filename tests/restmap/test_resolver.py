@@ -1,66 +1,54 @@
 import pytest
-from restmap.resolver.ResolutionGraph import ResolutionGraph
-from restmap.resolver.nodes import EndpointNode, ParamNode, ResolverNode, BaseNode
+from pathlib import Path
+from restmap.resolver.nodes.resolvers import ResolverNode
+from restmap.templateParser.TemplateParser import TemplateSchema
+from restmap.manager.Manager import Manager
+from restmap.resolver.Resolver import Resolver
+from restmap.resolver.nodes import EndpointNode, ParamNode
+from restmap.templateParser.TemplateParser import TemplateParser
 
-
-@pytest.fixture
-def graph():
-    return ResolutionGraph()
 
 @pytest.fixture
 def resolver():
-    resolver = ResolverNode.ResolverNode(
-        name="db_scope_resolver"
-    )
-    return resolver
+    return Resolver()
 
 @pytest.fixture
-def param(resolver: ResolverNode.ResolverNode):
-    return ParamNode.ParamNode(
-            name='scope',
-            type='str',
-            resolver= resolver
-        )
+def parser():
+    return TemplateParser()
 
 @pytest.fixture
-def endpoint(param: ParamNode.ParamNode):
-    endpoint_dict = {
-        'name': 'google_maps_api',
-        'base_url': 'https://www.google.com/',
-        'params': [param]
-    }
-    endpoint = EndpointNode.EndpointNode(**endpoint_dict)
-    return endpoint
+def template_path():
+    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
 
-class TestEndpointResolver:
+@pytest.fixture
+def template(parser: TemplateParser, template_path: Path):
+    return parser.load(template_path)
 
-    def test_add_endpoint(self, graph: ResolutionGraph, endpoint: EndpointNode.EndpointNode):
-        response = graph.add_endpoint(endpoint)
-        assert len(graph.endpoints) == 1, "must add Endpoint to internal state"
+@pytest.fixture
+def manager():
+    return Manager()
+
+# TESTS________________
+class TestNodeResolution:
+
+    def test__resolve_endpoint(self, 
+        manager: Manager, 
+        template_path: Path, 
+        template:TemplateSchema, 
+        resolver: Resolver
+        ):
+        manager.register(template_path)
+        endpoint = template.config.endpoints[0]
+        response = resolver._resolve_endpoint(name=endpoint['name'], endpoint=endpoint)
+        assert isinstance(response, EndpointNode.EndpointNode)
         
-    def test_remove_endpoint(self, graph: ResolutionGraph, endpoint: EndpointNode.EndpointNode):
-        graph.add_endpoint(endpoint) 
-        response = graph.remove_endpoint(endpoint.name)
-        assert len(graph.endpoints) == 0, "must remove EndpointNode from array of endpoints"
-
-class TestParameterResolver:
-
-    def test_add_param(self, graph: ResolutionGraph, param: ParamNode.ParamNode):
-        response = graph.add_parameter(param)
-        assert len(graph.params) == 1, "must add ParamNode to array of parameters"
-
-    def test_remove_param(self, graph: ResolutionGraph, param: ParamNode.ParamNode):
-        graph.add_parameter(param) 
-        response = graph.remove_parameter(param.name)
-        assert len(graph.params) == 0, "must remove EndpointNode from array of endpoints"
-
-class TestResolver:
-
-    def test_add_resolver(self, graph: ResolutionGraph, resolver: ResolverNode.ResolverNode):
-        response = graph.add_resolver(resolver)
-        assert len(graph.resolvers) == 1, "must add ParamNode to array of parameters"
-
-    def test_remove_resolver(self, graph: ResolutionGraph, resolver: ResolverNode.ResolverNode):
-        graph.add_resolver(resolver) 
-        response = graph.remove_resolver(resolver.name)
-        assert len(graph.resolvers) == 0, "must remove EndpointNode from array of endpoints"
+    def test__resolve_resolvers(self, 
+        manager: Manager, 
+        template_path: Path, 
+        template:TemplateSchema, 
+        resolver: Resolver
+        ):
+        manager.register(template_path)
+        resolver_dict = template.config.resolvers[0]
+        response = resolver._resolve_resolver(resolver_dict)
+        assert isinstance(response, EndpointNode.EndpointNode)

@@ -21,7 +21,7 @@ from typing import Union
 from pathlib import Path
 
 from enums import StatusCode
-from manager.State import State
+from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
 
@@ -41,8 +41,10 @@ class Manager:
         """
         # Load the template from the file path given
         template = self._parser.load(path)
+        # Resolve template
+        resolution_graph = self._resolver.resolve(template)
         # Store updated version
-        self._state.state = template
+        self._state.state = resolution_graph
         # 
         return StatusCode.SUCCESS
     
@@ -51,7 +53,7 @@ class Manager:
         Validate the configuration files in the local environment
         """
         # Ensure they can be parsed correctly
-        template_dict = self._parser.load(path)
+        # template_dict = self._parser.load(path)
         # Ensure the elements can be placed onto the graph
         execution_graph = self._resolver.resolve(template_dict)
 

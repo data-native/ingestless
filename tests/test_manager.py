@@ -1,5 +1,4 @@
 import json
-import pickle
 from typing import Iterable
 import pytest
 
@@ -154,9 +153,9 @@ class TestFunctionManager:
         rules = local_manager._provider.list_rules_by_target(
             type=Services.Function,
             target=registered_function.name)
-        rules = rules['RuleNames']
+        rule_dict = rules['RuleNames']
         #TODO: Check that the function model no longer has a schedule associated
-        assert schedule.name not in rules, "Schedule must be removed from the event routing rules for the function"
+        assert schedule.name not in rule_dict, "Schedule must be removed from the event routing rules for the function"
         function_names = [fun['FunctionName'] for fun in local_manager.list_functions()]
         assert registered_function.name in function_names, "Unscheduled function must still exist as a function"
         registered_function_names = [fun.name for fun in local_manager.list_registered_functions()]
@@ -175,17 +174,16 @@ class TestFunctionManager:
         assert registered_function.name not in local_manager._registered_functions, "Function should be removed from manager registration state"
 
 
-    def test_describe_function(self, local_manager: Manager, function: FunctionModel):
+    def test_describe_function(self, local_manager: Manager, registered_function: FunctionModel):
         """
         Ensure a function description unified from backend provider
         details and orchestrator state specifics is returned
         """
         # Function call
-        response = local_manager.describe_function(function.name)
+        response = local_manager.describe_function(registered_function.name)
         assert isinstance(response, dict)
         assert 'attributes' in response, "Must contain the 'attributes' dict containing the function parameters from the backend"
         assert 'resourceId' in response, "Must contain a resourceId parameter by default"
-        assert response['name'] == function.name
 
     # HELPERS________________________
     def test_list_options(self, local_manager: Manager):

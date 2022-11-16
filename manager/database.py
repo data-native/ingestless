@@ -7,6 +7,7 @@ from enums import StatusCode, Errors
 from manager.types import FunctionItem
 from manager.models import FunctionModel, ScheduleModel, TriggerModel, Models
 from manager.utils import dynamoutils
+from pynamodb.exceptions import DoesNotExist
 
 logger = logging.getLogger('root')
 class DBResponse(NamedTuple):
@@ -35,7 +36,11 @@ class DatabaseHandler:
         """
         Read a single function from the backend
         """
-        function = FunctionModel.get(hash_key=function_hk)
+        try:
+            function = FunctionModel.get(hash_key=function_hk)
+        except DoesNotExist as e:
+            raise e
+
         return dynamoutils.load_function_instance(function)
 
     def read_functions(self, stack: str='', details: bool = False):

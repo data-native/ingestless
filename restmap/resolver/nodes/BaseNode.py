@@ -1,5 +1,15 @@
+from dataclasses import dataclass
 
-class BaseNode:
+
+@dataclass
+class _BaseNodeBase:
+    name: str
+
+@dataclass
+class _BaseNodeDefaults:
+    descr: str = ''
+@dataclass
+class BaseNode(_BaseNodeDefaults, _BaseNodeBase):
     """
     A graph node within the ResolutionGraph is instantiated
     with parameters received from the configuration template.
@@ -10,11 +20,7 @@ class BaseNode:
     and eventually be compiled onto a specific backend implementation
     using backend providers.
     """
-
-    def __init__(self) -> None:
-        pass
-
-    def compile(self, provider):
+    def resolve(self, provider):
         """
         Called on each node when the graph gets executed
         """

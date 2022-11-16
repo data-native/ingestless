@@ -102,14 +102,16 @@ class AWSProvider(BackendProvider):
         response = self.get_client(Services.ServiceBus).enable_rule(Name=name)
         return response
     
-    def list_rules_by_target(self, type: Services, target:str):
+    def list_rules_by_target(self, type: Services, target:str) -> List:
         """
         Lists the rules for the specified target.
         """
         if type == Services.Function:
             function = FunctionModel.get(target)
-            response = self.get_client(Services.ServiceBus).list_rule_names_by_target(TargetArn=function['FunctionArn'])
+            response = self.get_client(Services.ServiceBus).list_rule_names_by_target(TargetArn=function.attributes['FunctionArn'])
             return response
+        else:
+            raise ValueError("No suitable service type specified")
 
     def list_rules(self, prefix:str=''):
         """
