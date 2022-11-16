@@ -17,7 +17,7 @@ class ComponentDict:
     endpoints: dict = field(default_factory=dict)
     resolvers: dict = field(default_factory=dict)
     params: dict = field(default_factory=dict)
-    metadata: dict = field(default_factory=dict)
+    # metadata: dict = field(default_factory=dict)
      
 @dataclass
 class StateDict:
@@ -35,11 +35,13 @@ class StateDict:
          
         # Ensure the elements get resolved first
         component_dict = ComponentDict(
-            endpoints=template.config.endpoints,
-            resolvers=template.config.resolvers,
-            params=template.config.params,
-            metadata=template.metadata
+            endpoints=template._endpoints,
+            resolvers=template._resolvers,
+            params=template._params,
+            # metadata=template._met
         )
+        state = {} # TODO: Define state (or remove it not necessary. Currently just a placeholder without defined purpose)
+            
         return StateDict(components=component_dict, state=state)
 
     def get_diff(self, other: 'StateDict'):
