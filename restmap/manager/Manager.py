@@ -21,9 +21,9 @@ from typing import Union
 from pathlib import Path
 
 from enums import StatusCode
-from manager.State import State
-from templateParser.TemplateParser import TemplateParser, TemplateSchema
-
+from restmap.manager.State import State
+from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
+from restmap.resolver.Resolver import Resolver
 
 class Manager:
     """
@@ -32,6 +32,7 @@ class Manager:
 
     def __init__(self) -> None:
         self._parser = TemplateParser()
+        self._resolver = Resolver()
         self._state = State()
         
     def register(self, path: Union[str, Path]) -> StatusCode:
@@ -40,15 +41,22 @@ class Manager:
         """
         # Load the template from the file path given
         template = self._parser.load(path)
+        # Resolve template
+        resolution_graph = self._resolver.resolve(template)
         # Store updated version
-        self._state.state = template
+        self._state.state = resolution_graph
         # 
         return StatusCode.SUCCESS
     
-    def validate(self):
+    def validate(self, path: Union[str, Path]):
         """
         Validate the configuration files in the local environment
         """
+        # Ensure they can be parsed correctly
+        # template_dict = self._parser.load(path)
+        # Ensure the elements can be placed onto the graph
+        execution_graph = self._resolver.resolve(template_dict)
+
         raise NotImplementedError
 
     def describe(self, component: str):

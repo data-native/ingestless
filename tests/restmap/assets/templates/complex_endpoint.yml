@@ -17,6 +17,11 @@ config:
             params:
                 - reservationOrderId:
                     param: reservationOrderId
+        - scope:
+            kind: relativeurl
+            base: baseurl
+            relative: /scope/
+
     params:
         reservationOrderId:
             name: reservationOrderId
@@ -25,10 +30,16 @@ config:
         scope:
             name: scope
             type: String
+            resolver: EndpointScopeResolver
             descr: Scope used in retrieval of something
     resolvers:
+        EndpointScopeResolver:
+            kind: EndpointResolver
+            endpoint: scope
+            authentication:
+                method: NameAndKey
         DBReservationLoader:
-            kind: DatabaseLoader
+            kind: DatabaseResolver
             connectionstring: "Some string that should be put into a secret"
             authentication: 
                 method: NameAndKey
