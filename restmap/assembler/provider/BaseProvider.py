@@ -25,7 +25,7 @@ The system uses the abstraction of:
 * Bucket: To define a BLOB storage medium
 * 
 """
-from abc import ABC, abstractclassmethod, abstractstaticmethod, abstractproperty
+from abc import ABC, abstractclassmethod, abstractstaticmethod, abstractproperty, abstractmethod
 #TODO: Check if implementation as ABC makes sense here
 class BaseBackendProvider(ABC):
     """
@@ -34,13 +34,16 @@ class BaseBackendProvider(ABC):
     assembler and the backend service.
     """
 
+    @abstractmethod
     def function(self):
         """
         Create a function in the system
         """
-    
+    @abstractmethod
     def table(self):
         """
         Create a storage table
         """
-        
+
+
+BaseBackendProvider.register() 
