@@ -46,4 +46,3 @@ class BaseBackendProvider(ABC):
         """
 
 
-BaseBackendProvider.register() 
