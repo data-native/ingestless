@@ -47,31 +47,31 @@ class PythonCompiler(BaseCompiler):
         super().__init__()
     
     def header(self):
-        header = HeaderNode(self.head, [])
+        header = HeaderNode(self.head, [], 'Header Code\n')
         self.head.add_child(header)
         return header
          
     def handler(self):
-        handler = HandlerNode(self.head, [])
+        handler = HandlerNode(self.head, [], 'Handler Code\n')
         self.head.add_child(handler)
         return handler
     
     def body_parser(self):
-        parser = BodyParserNode(self.head, [])
+        parser = BodyParserNode(self.head, [], 'Parser Code\n')
         self.head.add_child(parser)
         return parser
 
     def compile(self):
         current_node = self.head
         while current_node:
-            if not current_node.parent:
+            if current_node == self.head and not current_node.children:
                 return
             if not current_node.children:
                 # Reach a leave
-                self.code + current_node.compile()
+                self.code = self.code + current_node.compile()
                 # Remove the child from the parent
                 current_node.parent.children = [node for node in current_node.parent.children if node != current_node]
                 # go a level up
-                current_node = current_node.parent()
+                current_node = current_node.parent
             else:
                 current_node = current_node.children[0]

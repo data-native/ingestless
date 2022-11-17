@@ -33,3 +33,4 @@ class TestFunctionCompilation:
         compiler.header()
         compiler.handler()
         compiler.compile()
+        assert compiler.code != ''
