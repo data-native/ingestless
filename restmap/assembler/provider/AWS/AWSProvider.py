@@ -8,6 +8,8 @@ Implements using the AWS CDK
 import aws_cdk as cdk
 from aws_cdk import App
 from .bucket import BucketProvider
+from .function import FunctionProvider
+
 class Stack(cdk.Stack):
     def __init__(self, scope: cdk.App, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -18,6 +20,7 @@ class AWSBackendProvider():
         self._scope = App()
         self._stack = self._init_stack(self._scope, construct_id=name)
         self._bucketProvider = BucketProvider(stack=self._stack)
+        self._functionProvider = FunctionProvider(stack=self._stack)
     
     def _init_stack(self,scope:App, construct_id='') -> cdk.Stack:
         return Stack(scope=scope, construct_id=construct_id)
@@ -25,7 +28,7 @@ class AWSBackendProvider():
     def _init_provider(self):
         """Initialize the management locally for deployment"""
         import subprocess
-        status = subprocess.run(["./restmap/assembler/provider/AWS/scripts/init_cdk.sh", ], shell=True) 
+        status = subprocess.run(["cdk", "compile", ], shell=True) 
         raise NotImplementedError          
 
     @property
@@ -43,16 +46,15 @@ class AWSBackendProvider():
 
     def compile(self):
         """Compile the iac template for deployment"""
-        import subprocess
-        status = subprocess.run(["./restmap/assembler/provider/AWS/scripts/init_cdk.sh"], shell=True) 
-    
+        self._stack.synth()
+         
     def diff(self, update):
         """
         Compute the difference between the current deployed stack
         and the updates meant for deployment.
         """
         import subprocess
-        return subprocess.run(["cdk", "diff"], shell=True)
+        return subprocess.run(["cdk", "synth"], shell=True)
     
     def tear_down(self):
         """
