@@ -22,3 +22,8 @@ class TestBucketProvider:
         bucket.withRole('test')
         assert bucket_name in provider._bucketProvider._constructs
          
+    def test_synth_bucket(self, provider: AWSBackendProvider):
+        bucket_name = 'test'
+        bucket = provider.Bucket.bucket(bucket_name)
+        provider.compile()
+        assert 

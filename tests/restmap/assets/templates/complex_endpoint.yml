@@ -6,10 +6,12 @@ config:
     endpoints:
         - baseurl:
             kind: baseurl
-            url: management.azure.com/{scope}
+            url: https://management.azure.com/{scope}/{other}
             params:
                 - scope:
-                    name: scope
+                    name: scope_param
+                - other:
+                    name: other
         - reservationlist:
             kind: relativeurl
             base: baseurl
@@ -27,11 +29,18 @@ config:
             name: reservationOrderId
             type: String
             resolver: DBReservationLoader
-        scope:
-            name: scope
+        scope_param:
+            name: scope_param
             type: String
-            resolver: EndpointScopeResolver
+            resolver:
+                name: EndpointScopeResolver
+                table: 3 # TODO: Implement
+                col: xxx # TODO: Implement
             descr: Scope used in retrieval of something
+        other:
+            name: other
+            type: String
+            resolver: DBOtherResolver
     resolvers:
         EndpointScopeResolver:
             kind: EndpointResolver
@@ -46,7 +55,14 @@ config:
             table:
                 name: Configuration
                 col: ['Id']
-            
+        DBOtherResolver:
+            kind: DatabaseResolver
+            connectionstring: "something"
+            authentication:
+                method: NameAndKey
+            table:
+                name: OtherTable
+                col: ['name'] 
 
     
 

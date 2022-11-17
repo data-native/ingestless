@@ -7,6 +7,7 @@ AWS Lambda implementation
 """
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
+from 
 from .BaseConstructProvider import BaseConstructProvider
 
 class FunctionProvider(BaseConstructProvider):
@@ -20,15 +21,17 @@ class FunctionProvider(BaseConstructProvider):
         """
         Create a lambda function
         """
-        if name in self._constructs:
-            return self
+        try:
+            self._set_active_construct(self._constructs[name])
+        except:
+            pass
         # function = lambda_.Function(self._stack, 
             # id=name, 
             # code=code, 
             # handler=handler)
-
-        self._set_active_construct(name)        
+            self._set_active_construct(name)        
+        return self
     
     def useFunction(self, uid:str):
-        
-        if name in self._constructs:
+        return self
+    
