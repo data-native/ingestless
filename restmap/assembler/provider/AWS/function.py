@@ -7,7 +7,6 @@ AWS Lambda implementation
 """
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
-from 
 from .BaseConstructProvider import BaseConstructProvider
 
 class FunctionProvider(BaseConstructProvider):

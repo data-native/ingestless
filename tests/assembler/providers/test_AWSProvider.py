@@ -26,4 +26,3 @@ class TestBucketProvider:
         bucket_name = 'test'
         bucket = provider.Bucket.bucket(bucket_name)
         provider.compile()
-        assert 

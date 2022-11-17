@@ -20,8 +20,6 @@ class Resolver:
     -----------------
     * Can query an endpoint with a simple fully specified endpoint
     * Can query an endpoint with a varying url 
-
-     
     """
 
     def __init__(self) -> None:
