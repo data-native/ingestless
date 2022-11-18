@@ -30,7 +30,11 @@ class TestFunctionCompilation:
         assert False
 
     def test_compile(self, compiler: PythonCompiler):
-        compiler.header()
-        compiler.handler()
-        compiler.compile()
-        assert compiler.code != ''
+        header = compiler.header()
+        handler = compiler.handler().retry(20).timeout(10)
+        
+        response = compiler.compile()
+        # Assert there is a response object that is a string
+        # Assert a python file is generated in the target src location
+        # Assert 
+        assert response
