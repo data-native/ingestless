@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .Compiler import CompilerNode
+from restmap.compiler.CompilerNode import CompilerNode
 
 @dataclass
 class HeaderNodeBase:
@@ -7,7 +7,7 @@ class HeaderNodeBase:
     
 @dataclass
 class HeaderNodeDefaults:
-    pass
+    agent: str = "TestAgent: Chrome"
 
 @dataclass
 class HeaderNode(CompilerNode):
@@ -16,4 +16,5 @@ class HeaderNode(CompilerNode):
         """
         The header 
         """
+        pass
 

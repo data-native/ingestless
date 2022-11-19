@@ -49,6 +49,7 @@ class StateDict:
         Compute the difference between the current and other state
         dict in terms of additions and removals
         """
+        return other
         # Check if identical and if return early
 
         # Compute set difference
@@ -58,7 +59,6 @@ class StateDict:
         # Compute additions
 
         # return removals, additions
-        raise NotImplementedError
     
 
 class State:
@@ -92,9 +92,9 @@ class State:
         # Check that StateDict is valid
         updated_state = StateDict.from_resolutiongraph(update)
         # Compile to 
-        diff = self.state.get_diff(updated_state)
-        if not diff:
-            return StatusCode.FILE_ERROR
+        # diff = self.state.get_diff(updated_state)
+        # if not diff:
+            # return StatusCode.FILE_ERROR
 
         self._state[self.version + 1] = updated_state
         return StatusCode.SUCCESS

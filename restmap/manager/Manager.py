@@ -21,10 +21,11 @@ from typing import Union
 from pathlib import Path
 
 from enums import StatusCode
+from enums import Services
 from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
-
+from restmap.compiler.Compiler import BaseCompiler, FunctionCompiler
 class Manager:
     """
     
@@ -33,9 +34,22 @@ class Manager:
     def __init__(self) -> None:
         self._parser = TemplateParser()
         self._resolver = Resolver()
+        #TODO Extend to handle multiple compilation processes
+        self._compiler = FunctionCompiler()
         self._state = State()
         
-    def register(self, path: Union[str, Path]) -> StatusCode:
+    def validate(self, path: Union[str, Path]):
+        """
+        Validate the configuration files in the local environment
+        """
+        # Ensure they can be parsed correctly
+        template_dict = self._parser.load(path)
+        # Ensure the elements can be placed onto the graph
+        execution_graph = self._resolver.resolve(template_dict)
+
+        raise NotImplementedError
+
+    def plan(self, path: Union[str, Path]) -> StatusCode:
         """
         Registers a components defined in a given storage location
         """
@@ -45,29 +59,23 @@ class Manager:
         resolution_graph = self._resolver.resolve(template)
         # Store updated version
         self._state.state = resolution_graph
-        # 
+        # Compile the graph
+        self._compiler.from_resolution_graph(resolution_graph)
+        #TODO Ready to compile and deploy 
         return StatusCode.SUCCESS
-    
-    def validate(self, path: Union[str, Path]):
-        """
-        Validate the configuration files in the local environment
-        """
-        # Ensure they can be parsed correctly
-        # template_dict = self._parser.load(path)
-        # Ensure the elements can be placed onto the graph
-        execution_graph = self._resolver.resolve(template_dict)
 
-        raise NotImplementedError
+    def deploy(self):
+        #TODO Extend to handle a list of individual templates to deploy in one step
+        # Validate that 
+        if not self._is_planned:
+            # Try reading from set configuration location on default
+            # Check that there is a difference to deploy
+            # If not quit => 
+        # Compile code for the function
+        code = self._compiler.compile()
+        # Use the code to parametrize the function
 
-    def describe(self, component: str):
-        """
-        Compiles a description of the component for introspection
-        """
-        # Prepare the attribute filter
 
-        # Get component from state
-        component = self._state._get(component)
-    
     def init(self):
         """
         Initialize the local environment 

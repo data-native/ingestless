@@ -37,6 +37,7 @@ class AWSBackendProvider():
         Provider for the storage interaface
         """
         return self._bucketProvider
+    
 
     def deploy(self):
         """Compile and deploy the stack onto the AWS backend"""

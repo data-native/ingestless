@@ -1,0 +1,18 @@
+from dataclasses import dataclass
+from .CompilerNode import CompilerNode
+
+@dataclass
+class ResponseHandlerBase:
+    pass
+
+@dataclass
+class ResponseHandlerDefaults:
+    pass
+
+@dataclass
+class ResponseHandlerNode(ResponseHandlerDefaults, CompilerNode , ResponseHandlerBase):
+    """
+    Handles the compilation of response handler logic
+    """
+    def compile(self):
+        pass
