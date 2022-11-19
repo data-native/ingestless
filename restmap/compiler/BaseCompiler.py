@@ -1,5 +1,6 @@
 from pathlib import Path
 from jinja2 import Environment, PackageLoader
+from typing import List
 from restmap.compiler.CompilerNode import CompilerNode 
 
 class BaseCompiler:
@@ -19,15 +20,11 @@ class BaseCompiler:
     def __init__(self, compilation_dir:str='./ingestless/restmap/src') -> None:
         env = Environment(loader=PackageLoader("restmap", "compiler/templates"))
         self.env = env 
-        self.head = CompilerNode(
-            _env=env, 
-            _template=None, 
-            _parent=None, 
-            _children=[])
+        self.heads = []
         self.output_location = Path(compilation_dir)
 
     # TODO: Generalize the compiler to accept a language parameter and load the templates accordingly
-    def compile(self):
+    def compile(self, head: CompilerNode):
         """
         Performs a traversal on the compilation graph 
         to resolve nested subtrees and the overall tree
@@ -35,10 +32,10 @@ class BaseCompiler:
         """ 
         # TODO Resolve subtrees in 'enclosing nodes'
          
-        # Then 
-        current_node = self.head
+        # TODO Enable this traversal to receive a selected head endpoint 
+        current_node = head 
         while current_node:
-            if current_node == self.head and not current_node.children:
+            if current_node == self.heads and not current_node.children:
                 # break out when reaching the root node
                 return
             if not current_node.children:

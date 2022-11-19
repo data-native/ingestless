@@ -70,6 +70,24 @@ class FunctionCompiler(BaseCompiler):
     def __init__(self, compilation_dir: str='./ingestless/restmap/src') -> None:
         super().__init__(compilation_dir)
 
+    def _spawn_head(self) -> CompilerNode:
+        """
+        Stars a new parallel compilation tree head
+        
+        This enables the Compiler to compile multiple functions within 
+        a given compilation process.
+        """
+        head = CompilerNode(
+            _env = self.env,
+            _template = '',
+            _parent = None,
+            _children = [], 
+            code= '',
+            _is_enclosing = True
+        )
+        self.heads.append(head)
+        return head
+
     # Rename to 'from_ 
     def from_resolution_graph(self, graph: ResolutionGraph):
         """
@@ -80,20 +98,43 @@ class FunctionCompiler(BaseCompiler):
         * Each subtree section is defined by 'enclosing CompilerNodes'
         * Each 'enclosing node' contains a nested structure of all elements it requires to parametrize its section
         """
-        # TODO Resolve the graph for all functions
-        
-        # Set up all nodes to configure the compilation
-        header = self.header()
-        handler = self.handler()
-        parser = self.body_parser()
-
-        # Add nested elements to the function structure based on template parametrization
-        # TODO: Move the iteration over the endpoints out of here into BaseCompiler and add FunctionCompiler in a list of compilers registered there to handle compilation of all supported types
         for endpoint in graph._endpoints:
-            # Compile header based on configuration
-            pass
+            head = self._spawn_head()
+            # TODO Resolve the graph for all functions
+            self._compile_header(graph)
+            self._compile_body(graph)
+            self._compile_response(graph) 
         
+    def _compile_header(self, graph: ResolutionGraph):
+        """
+        Extracts required attributes from ResolutionGraph and 
+        instantiates the HeaderNode
+        """
+        # Extract all data from graph
+        # Instantiate the node
+        self.header()
+        
+    def _compile_body(self, graph: ResolutionGraph):
+        """
+        Extracts required attributes from ResolutionGraph and 
+        instantiates the HeaderNode
+        """
+        # Extract all data from graph
+        # Instantiate the node
+        self.body_parser()
+
+    def _compile_response(self, graph: ResolutionGraph):
+        """
+        Extracts required attributes from ResolutionGraph and 
+        instantiates the HeaderNode
+        """
+        # Extract all data from graph
+        # Instantiate the node
+        self.response_handler()
+        
+
     def header(self, 
+        parent: CompilerNode = None,
         authentication: str = None,
         template:str="functions/aws/header.jinja",
     ) -> HeaderNode.HeaderNode:
@@ -108,45 +149,51 @@ class FunctionCompiler(BaseCompiler):
         header = HeaderNode.HeaderNode(
             _template=template,
             _env=self.env,
-            _parent=self.head,
+            _parent=None,
             _children=[]
             )
-        self._append_to_parent(header)
+        self._append_to_parent(parent, header)
         # Handle Authentication
         if authentication:
-            header.child(self.authenticator())
+            header.child(self, self.authenticator())
 
         return header
          
     #TODO
-    def handler(self, template: str="functions/aws/") -> HandlerNode.HandlerNode:
+    def handler(self, 
+        template: str="functions/aws/",
+        parent: CompilerNode = None, 
+        ) -> HandlerNode.HandlerNode:
         """
         Create the compiled handler Node
         """
         handler = HandlerNode.HandlerNode(
                 _template=template, 
                 _env=self.env, 
-                _parent=self.head, 
+                _parent=None, 
                 _children=[], 
                 code='Handler Code\n')
-        self._append_to_parent(handler)
+        self._append_to_parent(parent, handler)
         return handler
     
-    def body_parser(self, template:str="functions/aws/body_parser.jinja") -> BodyParserNode.BodyParserNode:
+    def body_parser(self, 
+        template:str="functions/aws/body_parser.jinja",
+        parent: CompilerNode = None,
+        ) -> BodyParserNode.BodyParserNode:
         parser = BodyParserNode.BodyParserNode(
             _template=template,
             _env=self.env, 
-            _parent=self.head, 
+            _parent=None,
             _children=[]
             )
-        self._append_to_parent(parser)
+        self._append_to_parent(parent, parser)
         return parser
 
-    def response_handler(self, 
+    def response_handler(self,
+        parent: CompilerNode = None, 
         template:str="functions/aws/response_handler.jinja",
         parse_to: str = 'json',
         escape_strings: bool = False,
-
         ):
         """
         Parametrizes and appends a ResponseHandler Node to the compilation graph.
@@ -156,10 +203,10 @@ class FunctionCompiler(BaseCompiler):
         response_handler = ResponseHandlerNode(
             _template=template,
             _env=self.env, 
-            _parent=self.head, 
+            _parent=None, 
             _children=[]
         )
-        self._append_to_parent(response_handler)
+        self._append_to_parent(parent, response_handler)
         return response_handler
     
     def authenticator(self,
@@ -179,11 +226,11 @@ class FunctionCompiler(BaseCompiler):
         authenticator = AuthenticatorNode(
             _template=template,
             _env=self.env,
-            _parent=self.head,
+            _parent=None,
             _children=[]
         )
         
-        self._append_to_parent(authenticator)
+        self._append_to_parent(parent, authenticator)
         
     def compile(self) -> DeployableFunction:
         """
@@ -203,7 +250,7 @@ class FunctionCompiler(BaseCompiler):
         requirements = self._compile_requirements()
         deployment_params = self._compile_params()
         #TODO: Replace with native jinja functionality
-        self._save_to_file(template_name, code)
+        # self._save_to_file(template_name, code)
         #TODO Define parameters based on semantics for the 'generlized function' service to be deployed by the BackendProvider
 
         return  DeployableFunction(
@@ -225,9 +272,28 @@ class FunctionCompiler(BaseCompiler):
         * Parallelism
         * 
         """
-        return DeploymentParams()
+        return DeploymentParams(
+            min_allocated_memory_gb=128,
+            max_allocated_memory_gb=256,
+            timeout=300,
+            permissions=['DynamoDBReader'],
+            env_variables={},
+            tags=[],
+            is_monitored=True,
+            is_traced=True,
+            concurrency=10
+        )
     # TODO: Remove and replace with build in jinja function
     
+    def _compile_requirements(self) -> List[FunctionRequirement]:
+        """
+        Compiles the list of requirements for the function execution
+        """
+        requirements: List[FunctionRequirement] = []
+        # TODO Collect dependencies from components after compilation
+        # TODO Compile them into import statements in the function code
+        # TODO Compile them into a requirements format usable for image creation in docker and pre existing image installation
+        return requirements
     
     def _save_to_file(self, name:str, doc: str):
         """Output the compilation result to file location"""
@@ -235,13 +301,9 @@ class FunctionCompiler(BaseCompiler):
         path = self.output_location / f"{name.split('.')[0]}.py" 
         path.write_text(doc) 
 
-    def _compile_requiements(self) -> List[FunctionRequirement]:
-        """
-        Generates the list of imports required for the given code file
-        """
 
     def _append_to_parent(self, parent: CompilerNode, node: CompilerNode):
         """Appends to given parent, or else to Compilation Tree root"""
-        parent = parent if parent else self.head
+        parent = parent if parent else self._spawn_head()
         parent.child(node) 
 

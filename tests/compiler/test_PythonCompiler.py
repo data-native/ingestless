@@ -11,7 +11,6 @@ def func_compiler():
 def manager():
     return Manager()
 
-
 class TestFunctionCompilation:
 
     def test_initialize_graph(self, func_compiler: FunctionCompiler):
@@ -20,12 +19,14 @@ class TestFunctionCompilation:
     def test_add_header(self, func_compiler: FunctionCompiler):
         header_node = func_compiler.header()
         assert isinstance(header_node, HeaderNode.HeaderNode)
-        assert func_compiler.head._children[0] == header_node
+        assert len(func_compiler.heads) == 1, "calling head without parent defined must create parallel compilation tree"
+        assert func_compiler.heads[0]._children[0] == header_node, "Created node must be placed as child of newly created parallel compilation tree"
+        
 
     def test_add_request_handler(self, func_compiler: FunctionCompiler):
         handler_node = func_compiler.handler()
         assert isinstance(handler_node, HandlerNode.HandlerNode)
-        assert func_compiler.head._children[0] == handler_node
+        assert func_compiler.heads[0]._children[0] == handler_node
     
     def test_add_nested_request_handler(self, func_compiler: FunctionCompiler):
         handler = func_compiler.handler(
@@ -46,12 +47,6 @@ class TestFunctionCompilation:
         assert response
         assert isinstance(response, str)
 
-    def test_compile_response_covertion(self, func_compiler: FunctionCompiler):
-        assert False
-
-    def test_compile_response_offload(self, func_compiler: FunctionCompiler):
-        assert False
-
     def test_compile(self, func_compiler: FunctionCompiler):
         header = func_compiler.header()
         # handler = func_compiler.handler().retry(20).timeout(10)
@@ -63,9 +58,10 @@ class TestFunctionCompilation:
         assert response
     
     def test_from_resolution_graph(self, manager: Manager, func_compiler: FunctionCompiler):
-        resolution_graph = manager.plan('./ingestless/tests/restmap/assets/complex_endpoint.yml')
-        func_compiler.from_resolution_graph()
-
+        template = manager._parser.load('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+        resolution_graph = manager._resolver.resolve(template)
+        func_compiler.from_resolution_graph(resolution_graph)
+        assert True
 
 class TestCompilerNode:
 
