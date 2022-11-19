@@ -1,40 +1,80 @@
 import pytest
-from restmap.compiler.Compiler import PythonCompiler, HeaderNode, HandlerNode
+from restmap.manager.Manager import Manager
+from restmap.compiler.function.FunctionCompiler import FunctionCompiler
+from restmap.compiler.function import HeaderNode, HandlerNode
 
 @pytest.fixture
-def compiler():
-    return PythonCompiler()
+def func_compiler():
+    return FunctionCompiler()
+
+@pytest.fixture
+def manager():
+    return Manager()
+
 
 class TestFunctionCompilation:
 
-    def test_initialize_graph(self, compiler: PythonCompiler):
-        assert isinstance(compiler, PythonCompiler)
+    def test_initialize_graph(self, func_compiler: FunctionCompiler):
+        assert isinstance(func_compiler, FunctionCompiler)
 
-    def test_compile_header(self, compiler: PythonCompiler):
-        header_node = compiler.header()
-        assert isinstance(header_node, HeaderNode)
-        assert compiler.head.children[0] == header_node
+    def test_add_header(self, func_compiler: FunctionCompiler):
+        header_node = func_compiler.header()
+        assert isinstance(header_node, HeaderNode.HeaderNode)
+        assert func_compiler.head._children[0] == header_node
 
-    def test_compile_http_request(self, compiler: PythonCompiler):
-        handler_node = compiler.handler()
-        assert isinstance(handler_node, HandlerNode)
-        assert compiler.head.children[0] == handler_node
+    def test_add_request_handler(self, func_compiler: FunctionCompiler):
+        handler_node = func_compiler.handler()
+        assert isinstance(handler_node, HandlerNode.HandlerNode)
+        assert func_compiler.head._children[0] == handler_node
+    
+    def test_add_nested_request_handler(self, func_compiler: FunctionCompiler):
+        handler = func_compiler.handler(
+            template='functions/api_request.jinja'
+        )
+        handler.compile()
+        # Introduce nested elements
 
-    def test_compile_body_parser(self, compiler: PythonCompiler):
-        assert False
-
-    def test_compile_response_covertion(self, compiler: PythonCompiler):
-        assert False
-
-    def test_compile_response_offload(self, compiler: PythonCompiler):
-        assert False
-
-    def test_compile(self, compiler: PythonCompiler):
-        header = compiler.header()
-        handler = compiler.handler().retry(20).timeout(10)
+    def test_compile_header(self, func_compiler: FunctionCompiler):
+        handler = func_compiler.handler(
+            template='functions/api_request.jinja'
+        )
+        handler.compile()
         
-        response = compiler.compile()
+    def test_compile_body_parser(self, func_compiler: FunctionCompiler):
+        parser = func_compiler.body_parser()
+        response = parser.compile()
+        assert response
+        assert isinstance(response, str)
+
+    def test_compile_response_covertion(self, func_compiler: FunctionCompiler):
+        assert False
+
+    def test_compile_response_offload(self, func_compiler: FunctionCompiler):
+        assert False
+
+    def test_compile(self, func_compiler: FunctionCompiler):
+        header = func_compiler.header()
+        # handler = func_compiler.handler().retry(20).timeout(10)
+        
+        response = func_compiler.compile()
         # Assert there is a response object that is a string
         # Assert a python file is generated in the target src location
         # Assert 
         assert response
+    
+    def test_from_resolution_graph(self, manager: Manager, func_compiler: FunctionCompiler):
+        resolution_graph = manager.plan('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+        func_compiler.from_resolution_graph()
+
+
+class TestCompilerNode:
+
+    def test_compile_flat_construct(self, func_compiler: FunctionCompiler):
+        head = func_compiler.header()
+        assert head
+
+    def test_compile_subtree(self, func_compiler: FunctionCompiler):
+        head = func_compiler.header()
+        head.child(func_compiler.authenticator())
+        output_head = head.compile()
+        assert head        

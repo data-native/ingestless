@@ -9,7 +9,7 @@ config:
             url: https://management.azure.com/{scope}/{other}
             params:
                 - scope:
-                    name: scope_param
+                    name: scope
                 - other:
                     name: other
         - reservationlist:
@@ -29,13 +29,10 @@ config:
             name: reservationOrderId
             type: String
             resolver: DBReservationLoader
-        scope_param:
-            name: scope_param
+        scope:
+            name: scope
             type: String
-            resolver:
-                name: EndpointScopeResolver
-                table: 3 # TODO: Implement
-                col: xxx # TODO: Implement
+            resolver: EndpointScopeResolver
             descr: Scope used in retrieval of something
         other:
             name: other
@@ -45,21 +42,18 @@ config:
         EndpointScopeResolver:
             kind: EndpointResolver
             endpoint: scope
-            authentication:
-                method: NameAndKey
+            authentication: NameAndKey
         DBReservationLoader:
             kind: DatabaseResolver
             connectionstring: "Some string that should be put into a secret"
-            authentication: 
-                method: NameAndKey
+            authentication: NameAndKey
             table:
                 name: Configuration
                 col: ['Id']
         DBOtherResolver:
             kind: DatabaseResolver
             connectionstring: "something"
-            authentication:
-                method: NameAndKey
+            authentication: NameAndKey
             table:
                 name: OtherTable
                 col: ['name'] 

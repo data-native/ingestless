@@ -25,7 +25,8 @@ from enums import Services
 from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
-from restmap.compiler.Compiler import BaseCompiler, FunctionCompiler
+from restmap.compiler.BaseCompiler import BaseCompiler
+from restmap.compiler.function.FunctionCompiler import FunctionCompiler
 class Manager:
     """
     
@@ -35,7 +36,7 @@ class Manager:
         self._parser = TemplateParser()
         self._resolver = Resolver()
         #TODO Extend to handle multiple compilation processes
-        self._compiler = FunctionCompiler()
+        self._compiler= FunctionCompiler()
         self._state = State()
         
     def validate(self, path: Union[str, Path]):
@@ -65,12 +66,14 @@ class Manager:
         return StatusCode.SUCCESS
 
     def deploy(self):
+        raise NotImplementedError
         #TODO Extend to handle a list of individual templates to deploy in one step
         # Validate that 
         if not self._is_planned:
             # Try reading from set configuration location on default
             # Check that there is a difference to deploy
             # If not quit => 
+            pass
         # Compile code for the function
         code = self._compiler.compile()
         # Use the code to parametrize the function

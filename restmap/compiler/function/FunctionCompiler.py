@@ -6,26 +6,14 @@ Compiler
 """
 from typing import Union, List, Dict, Optional
 from dataclasses import dataclass
-from pathlib import Path
-from jinja2 import Environment, PackageLoader, select_autoescape
 
 from restmap.resolver.ResolutionGraph import ResolutionGraph
-from restmap.compiler import HandlerNode, HeaderNode, RequestNode, BodyParserNode
+from restmap.compiler.function import HandlerNode, HeaderNode, RequestNode, BodyParserNode
+from restmap.compiler.BaseCompiler import BaseCompiler
 from restmap.compiler.CompilerNode import CompilerNode
-from restmap.compiler.AuthenticatorNode import AuthenticatorNode
-from restmap.compiler.ResponseHandlerNode import ResponseHandlerNode
+from restmap.compiler.function.AuthenticatorNode import AuthenticatorNode
+from restmap.compiler.function.ResponseHandlerNode import ResponseHandlerNode
 
-class BaseCompiler:
-    def __init__(self, compilation_dir:str='./ingestless/restmap/src') -> None:
-        env = Environment(loader=PackageLoader("restmap", "compiler/templates"), autoescape=select_autoescape())
-        self.env = env 
-        self.head = CompilerNode(
-            _env=env, 
-            _template=None, 
-            _parent=None, 
-            _children=[])
-        self.output_location = Path(compilation_dir)
-# TODO: Generalize the compiler to accept a language parameter and load the templates accordingly
 
 # FUNCTION_COMPILER__________________________
 @dataclass
@@ -103,8 +91,8 @@ class FunctionCompiler(BaseCompiler):
         # TODO: Move the iteration over the endpoints out of here into BaseCompiler and add FunctionCompiler in a list of compilers registered there to handle compilation of all supported types
         for endpoint in graph._endpoints:
             # Compile header based on configuration
-            `21k`
-
+            pass
+        
     def header(self, 
         authentication: str = None,
         template:str="functions/aws/header.jinja",

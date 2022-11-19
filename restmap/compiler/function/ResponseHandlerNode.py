@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .CompilerNode import CompilerNode
+from restmap.compiler.CompilerNode import CompilerNode 
 
 @dataclass
 class ResponseHandlerBase:

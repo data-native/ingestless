@@ -37,7 +37,7 @@ class TestNodeResolution:
         template:TemplateSchema, 
         resolver: Resolver
         ):
-        manager.register(template_path)
+        manager.plan(template_path)
         endpoint = template.config.endpoints[0]
         response = resolver._resolve_endpoint(name=endpoint['name'], endpoint=endpoint)
         assert isinstance(response, EndpointNode.EndpointNode)
@@ -48,7 +48,7 @@ class TestNodeResolution:
         template:TemplateSchema, 
         resolver: Resolver
         ):
-        manager.register(template_path)
+        manager.plan(template_path)
         resolver_dict = template.config.resolvers[0]
         response = resolver._resolve_resolver(resolver_dict)
         assert isinstance(response, EndpointNode.EndpointNode)
