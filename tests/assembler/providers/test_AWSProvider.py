@@ -1,6 +1,7 @@
 import pytest
-from restmap.assembler.provider.AWS.AWSProvider import AWSBackendProvider
+from restmap.assembler.provider.AWS.AWSProvider import AWSBackendProvider, FunctionProvider
 from restmap.assembler.provider.AWS.bucket import BucketProvider
+from restmap.compiler.function.FunctionCompiler import DeployableFunction, FunctionRequirement, DeploymentParams
 
 @pytest.fixture
 def provider():
@@ -26,3 +27,16 @@ class TestBucketProvider:
         bucket_name = 'test'
         bucket = provider.Bucket.bucket(bucket_name)
         provider.compile()
+
+class TestFunctionProvier:
+
+    def test_get_provider(self, provider: AWSBackendProvider):
+        func_provider = provider.Function
+        assert isinstance(func_provider, FunctionProvider)
+    def test_create_function(self, provider: AWSBackendProvider):
+        function_config = DeployableFunction(
+            code='Some Code', 
+            requirements=[FunctionRequirement()],
+            params= DeploymentParams()
+        )
+        function = provider.Function.function(function_config)

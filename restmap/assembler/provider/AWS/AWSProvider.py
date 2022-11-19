@@ -15,6 +15,15 @@ class Stack(cdk.Stack):
         super().__init__(scope, construct_id, **kwargs)
         
 class AWSBackendProvider():
+    """
+    Implements the configuration and deployment logic
+    against AWS using the AWS CDK. 
+
+    Core concepts:
+
+    Stack
+    ---------
+    """
 
     def __init__(self, name:str) -> None:
         self._scope = App()
@@ -38,6 +47,12 @@ class AWSBackendProvider():
         """
         return self._bucketProvider
     
+    @property
+    def Function(self) -> FunctionProvider:
+        """
+        Provider for the serverless function interface
+        """
+        return self._functionProvider
 
     def deploy(self):
         """Compile and deploy the stack onto the AWS backend"""
@@ -47,7 +62,7 @@ class AWSBackendProvider():
 
     def compile(self):
         """Compile the iac template for deployment"""
-        self._stack.synth()
+        raise NotImplementedError
          
     def diff(self, update):
         """

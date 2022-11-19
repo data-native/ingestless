@@ -16,7 +16,7 @@ def parser():
 
 @pytest.fixture()
 def template_path():
-    return Path('./tests/restmap/assets/complex_endpoint.yml')
+    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
     # Write file to templocation
     # return templocation
 
