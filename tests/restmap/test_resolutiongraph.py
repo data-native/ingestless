@@ -68,11 +68,11 @@ class TestParameters:
 class TestResolvers:
 
     def test_add_resolver(self, graph: ResolutionGraph, resolver: ResolverNode):
-        response = graph.add_resolver(name=resolver.name, resolver=resolver)
+        response = graph.add_resolver(resolver)
         assert len(graph._resolvers) == 1, "must add ParamNode to array of parameters"
         assert graph._resolvers[resolver.name] == resolver
 
     def test_remove_resolver(self, graph: ResolutionGraph, resolver: ResolverNode):
-        graph.add_resolver(name=resolver.name, resolver=resolver) 
+        graph.add_resolver(resolver) 
         response = graph.remove_resolver(resolver.name)
         assert len(graph._resolvers) == 0, "must remove EndpointNode from array of endpoints"
