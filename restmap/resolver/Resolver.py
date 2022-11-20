@@ -36,6 +36,7 @@ class Resolver:
         * Resolver nodes that when executed will read and provide a certain attribute
         #TODO: Ensure looping functionality can be compiled based on attributes and classes
         """
+        self.graph.kind = template.kind
         # Add all resolvers
         for resolver in template.config.resolvers:
             resolver_template = template.config.resolvers[resolver]

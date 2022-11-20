@@ -31,6 +31,17 @@ class FunctionProvider(BaseConstructProvider):
             self._set_active_construct(name)        
         return self
     
-    def useFunction(self, uid:str):
+    def withRole(self, role:str) -> 'FunctionProvider':
+        """
+        Assigns a role to the function
+        Works against the active function construct
+        """
         return self
+
+    def useFunction(self, uid:str):
+        raise NotImplementedError
+        # Retrieve the function a
+        self._set_active_construct()
+        return self
+    
     

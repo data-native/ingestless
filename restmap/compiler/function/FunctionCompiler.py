@@ -16,6 +16,17 @@ from restmap.compiler.function.ResponseHandlerNode import ResponseHandlerNode
 
 
 # FUNCTION_COMPILER__________________________
+@dataclass 
+class FunctionResolutionSubgraph:
+    """
+    A resolution graph nested subgraph specifying 
+    an executable functiono.
+    
+    It has to be extracted from the ResolutionGraph and 
+    passed to the Function Constrcut Compiler class for compilation.
+    """
+    graph: ResolutionGraph
+    
 @dataclass
 class DeploymentParams:
     """
@@ -70,6 +81,37 @@ class FunctionCompiler(BaseCompiler):
     def __init__(self, compilation_dir: str='./ingestless/restmap/src') -> None:
         super().__init__(compilation_dir)
 
+    def compile(self, function: ResolutionGraph) -> DeployableFunction:
+        """
+        Assumes a loaded resolution graph that was transformed into the compilation graph
+
+        * Loads the asssociated function template
+        * Compiles the compilation graph into the code file
+        * Parametrizes the deployment configuration for deployment through the backend provider
+        
+        return: Function object that can be deployed through the backend provider
+        """
+        # Compile the list of endpoints        for endpoint in graph._endpoints:
+        head = self._spawn_head()
+        # TODO Resolve the graph for all functions
+        self._compile_header(head, function)
+        self._compile_body(head, function)
+        self._compile_response(head, function) 
+
+        #Load the template
+        template_name = "aws_lambda_python.jinja"
+        template = self.env.get_template(template_name)
+        # Render code template
+        code = template.render(package_imports="from manager import test", dependent_functions="Dependents", documentation_strin="test doc string", return_statement="'A string return'")
+        requirements = self._compile_requirements()
+        deployment_params = self._compile_params()
+        return  DeployableFunction(
+            code=code,
+            runtime="Python@3.9",
+            requirements= requirements,
+            params = deployment_params
+        )
+
     def _spawn_head(self) -> CompilerNode:
         """
         Stars a new parallel compilation tree head
@@ -88,49 +130,42 @@ class FunctionCompiler(BaseCompiler):
         self.heads.append(head)
         return head
 
-    # Rename to 'from_ 
-    def from_resolution_graph(self, graph: ResolutionGraph):
-        """
-        Parses the resolution graph into the compilation graph
-        
-        * Each functional component is compiled based on template parameters
-        * Each section is represented as a potentially nested subtree
-        * Each subtree section is defined by 'enclosing CompilerNodes'
-        * Each 'enclosing node' contains a nested structure of all elements it requires to parametrize its section
-        """
-        for endpoint in graph._endpoints:
-            head = self._spawn_head()
-            # TODO Resolve the graph for all functions
-            self._compile_header(graph)
-            self._compile_body(graph)
-            self._compile_response(graph) 
-        
-    def _compile_header(self, graph: ResolutionGraph):
+    def _compile_header(self, parent: CompilerNode, graph: ResolutionGraph):
         """
         Extracts required attributes from ResolutionGraph and 
-        instantiates the HeaderNode
-        """
-        # Extract all data from graph
-        # Instantiate the node
-        self.header()
-        
-    def _compile_body(self, graph: ResolutionGraph):
-        """
-        Extracts required attributes from ResolutionGraph and 
-        instantiates the HeaderNode
-        """
-        # Extract all data from graph
-        # Instantiate the node
-        self.body_parser()
+        instantiates the HeaderNode.
 
-    def _compile_response(self, graph: ResolutionGraph):
+        Conditional structure
+        ----------------------
+        * Authentication: 
+        * HTTP/HTTPS:
+        * 
+        """
+        header_params = None
+        # Extract all data from graph
+        # Instantiate the node
+        header = self.header(parent=parent)
+        # Conditionally append authenticator
+
+
+        
+    def _compile_body(self, parent: CompilerNode, graph: ResolutionGraph):
         """
         Extracts required attributes from ResolutionGraph and 
         instantiates the HeaderNode
         """
         # Extract all data from graph
         # Instantiate the node
-        self.response_handler()
+        self.body_parser(parent=parent)
+
+    def _compile_response(self, parent: CompilerNode, graph: ResolutionGraph):
+        """
+        Extracts required attributes from ResolutionGraph and 
+        instantiates the HeaderNode
+        """
+        # Extract all data from graph
+        # Instantiate the node
+        self.response_handler(parent=parent)
         
 
     def header(self, 
@@ -229,36 +264,9 @@ class FunctionCompiler(BaseCompiler):
             _parent=None,
             _children=[]
         )
-        
         self._append_to_parent(parent, authenticator)
+        return authenticator
         
-    def compile(self) -> DeployableFunction:
-        """
-        Assumes a loaded resolution graph that was transformed into the compilation graph
-
-        * Loads the asssociated function template
-        * Compiles the compilation graph into the code file
-        * Parametrizes the deployment configuration for deployment through the backend provider
-        
-        return: Function object that can be deployed through the backend provider
-        """
-        #Load the template
-        template_name = "aws_lambda_python.jinja"
-        template = self.env.get_template(template_name)
-        # Render code template
-        code = template.render(package_imports="from manager import test", dependent_functions="Dependents", documentation_strin="test doc string", return_statement="'A string return'")
-        requirements = self._compile_requirements()
-        deployment_params = self._compile_params()
-        #TODO: Replace with native jinja functionality
-        # self._save_to_file(template_name, code)
-        #TODO Define parameters based on semantics for the 'generlized function' service to be deployed by the BackendProvider
-
-        return  DeployableFunction(
-            code=code,
-            runtime="Python@3.9",
-            requirements= requirements,
-            params = deployment_params
-        )
 
     def _compile_params(self) -> DeploymentParams:
         """

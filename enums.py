@@ -46,3 +46,16 @@ class Services(Enum):
     Function = auto()
     StateMachine = auto()
     ServiceBus = auto()
+
+class Constructs(Enum):
+    """
+    List of temlate constructs that can be defined as templates
+    within the management framework.
+
+    Each construct must implement a Compiler Class that transforms
+    the assembled TemplateSchema elements into deployable assets.
+    """
+    Endpoint = auto()
+    Resolver = auto() #TODO Support for individual definition 
+    Table = auto() # An example of a propable next type
+    #TODO Extend list of constructs as they become required

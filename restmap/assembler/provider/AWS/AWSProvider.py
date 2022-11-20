@@ -30,6 +30,7 @@ class AWSBackendProvider():
         self._stack = self._init_stack(self._scope, construct_id=name)
         self._bucketProvider = BucketProvider(stack=self._stack)
         self._functionProvider = FunctionProvider(stack=self._stack)
+        #TODO Add additional constructor providers
     
     def _init_stack(self,scope:App, construct_id='') -> cdk.Stack:
         return Stack(scope=scope, construct_id=construct_id)
@@ -40,6 +41,8 @@ class AWSBackendProvider():
         status = subprocess.run(["cdk", "compile", ], shell=True) 
         raise NotImplementedError          
 
+    # CONSTRUCTORS ____________________
+    # Grant access to the type specific constructors through a unfied class interface
     @property
     def Bucket(self) -> BucketProvider:
         """
@@ -54,6 +57,9 @@ class AWSBackendProvider():
         """
         return self._functionProvider
 
+
+    # METHOD API _________________
+    # These methods manage the IaC configuration and deployment process
     def deploy(self):
         """Compile and deploy the stack onto the AWS backend"""
         # 

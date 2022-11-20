@@ -26,7 +26,6 @@ from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
 from restmap.compiler.BaseCompiler import BaseCompiler
-from restmap.compiler.function.FunctionCompiler import FunctionCompiler
 class Manager:
     """
     
@@ -36,7 +35,7 @@ class Manager:
         self._parser = TemplateParser()
         self._resolver = Resolver()
         #TODO Extend to handle multiple compilation processes
-        self._compiler= FunctionCompiler()
+        self._compiler= Compiler()
         self._state = State()
         
     def validate(self, path: Union[str, Path]):

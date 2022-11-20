@@ -2,6 +2,7 @@
 
 """
 from typing import Dict
+from enums import Constructs
 from restmap.resolver.nodes import EndpointNode, ParamNode, BaseNode
 from restmap.resolver.nodes.resolvers import ResolverNode
 
@@ -17,10 +18,22 @@ class ResolutionGraph:
     
     def __init__(self) -> None:
         #TODO: Implement scheduling on multiple 'threads' of depdendency resolution to enable parallel execution
+        self._kind = None
         self._head = None
         self._resolvers: Dict[str, ResolverNode.ResolverNode] = {}
         self._params: Dict[str, ParamNode.ParamNode] = {}
         self._endpoints: Dict[str, EndpointNode.EndpointNode] = {}
+
+    # PROPERTIES _________
+    @property
+    def kind(self) -> Constructs:
+        return self._kind
+    @kind.setter
+    def kind(self, kind: str):
+        try:
+            self._kind = Constructs[kind]
+        except:
+            return ValueError(f"{kind} is not a supported Construct")
 
     # ENDPOINTS____________
     def add_endpoint(self, endpoint: EndpointNode.EndpointNode) -> None:

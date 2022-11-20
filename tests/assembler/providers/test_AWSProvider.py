@@ -1,7 +1,7 @@
 import pytest
 from restmap.assembler.provider.AWS.AWSProvider import AWSBackendProvider, FunctionProvider
 from restmap.assembler.provider.AWS.bucket import BucketProvider
-from restmap.compiler.function.FunctionCompiler import DeployableFunction, FunctionRequirement, DeploymentParams
+from restmap.compiler.function.FunctionCompiler import DeployableFunction, FunctionRequirement, FunctionDeploymentConfig
 
 @pytest.fixture
 def provider():
@@ -37,6 +37,7 @@ class TestFunctionProvier:
         function_config = DeployableFunction(
             code='Some Code', 
             requirements=[FunctionRequirement()],
-            params= DeploymentParams()
+            params= FunctionDeploymentConfig()
         )
         function = provider.Function.function(function_config)
+    
