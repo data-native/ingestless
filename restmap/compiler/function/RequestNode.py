@@ -11,4 +11,7 @@ class HeaderNodeDefaults:
 
 @dataclass
 class RequestNode(CompilerNode):
-    pass
+
+    def compile_code(self, node: 'CompilerNode' = None):
+        
+        return "<<REQUEST HANDLING CODE>>"

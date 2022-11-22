@@ -16,14 +16,15 @@ class HandlerNode(HandlerNodeDefaults, CompilerNode, HandlerNodeBase):
     Compiles the request handler configuration for function integration
     """
 
-    def compile(self) -> str:
+    def compile_code(self) -> str:
         """
         The overall handler code structure
         
         Can resolve elements within its body.
         """
         # Load template
-        template = self._env.get_template(self._template)
+        # template = self._env.get_template(self._template)
         # Compile template wth parameters
-        param_dict = {k: self.__dict__[k] for k in self.__dict__.keys() if not k.startswith('_')} 
-        return template.render(**param_dict)
+        # param_dict = {k: self.__dict__[k] for k in self.__dict__.keys() if not k.startswith('_')} 
+        # return template.render(**param_dict)
+        return "<<HANDLER CODE>>"

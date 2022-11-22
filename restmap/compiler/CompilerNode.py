@@ -36,9 +36,13 @@ class CompilerNode:
             # Collect return from component registration
             # Needs to first compile its children before it can return its final string
             for child in node._children:
-                self.code += self.compile(child)
-
-        self._children = [node for node in self._children if node != child]
+                self.code += child.compile_code()
+                self._children = [node for node in self._children if node != child]
+        self.compile_code()
         return self.code 
 
-
+    def compile_code(self):
+        """
+        Implements the code compilation for that specific node
+        """
+        raise NotImplementedError

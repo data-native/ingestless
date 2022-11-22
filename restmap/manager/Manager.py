@@ -25,7 +25,8 @@ from enums import Services
 from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
-from restmap.compiler.BaseCompiler import BaseCompiler
+from restmap.compiler.Compiler import Compiler
+from restmap.
 class Manager:
     """
     
@@ -37,6 +38,8 @@ class Manager:
         #TODO Extend to handle multiple compilation processes
         self._compiler= Compiler()
         self._state = State()
+        self._provider = 
+        self._compiled_deployables = []
         
     def validate(self, path: Union[str, Path]):
         """
@@ -59,23 +62,27 @@ class Manager:
         resolution_graph = self._resolver.resolve(template)
         # Store updated version
         self._state.state = resolution_graph
-        # Compile the graph
-        self._compiler.from_resolution_graph(resolution_graph)
-        #TODO Ready to compile and deploy 
+        # Compile the deployable assets
+        self._compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
         return StatusCode.SUCCESS
 
     def deploy(self):
-        raise NotImplementedError
+        """
+        Deploys the planend (resolved and compiled) elements onto
+        the backend provider.
+        """
         #TODO Extend to handle a list of individual templates to deploy in one step
         # Validate that 
-        if not self._is_planned:
+        if not self._compiled_deployables:
             # Try reading from set configuration location on default
             # Check that there is a difference to deploy
             # If not quit => 
-            pass
-        # Compile code for the function
-        code = self._compiler.compile()
-        # Use the code to parametrize the function
+            return "There is currently no planned deployment. Use `plan(template_path)` to register your templates" 
+
+        else:
+            # Compile code for the function
+
+            # Use the code to parametrize the function
 
 
     def init(self):

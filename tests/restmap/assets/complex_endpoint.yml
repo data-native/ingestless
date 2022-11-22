@@ -6,42 +6,43 @@ config:
     endpoints:
         - baseurl:
             kind: baseurl
-            url: https://management.azure.com/{scope}/{other}
-            params:
-                - scope:
-                    name: scope
-                - other:
-                    name: other
+            url: https://management.azure.com/
         - reservationlist:
             kind: relativeurl
             base: baseurl
-            relative: /providers/Microsoft.Capicity/reservation
+            relative: /providers/Microsoft.Capicity/reservation/{reservationOrderId}
             params:
                 - reservationOrderId:
                     param: reservationOrderId
         - scope:
             kind: relativeurl
             base: baseurl
-            relative: /scope/
-
+            relative: /scope/{userId}
+            params:
+                 - userId:
+                    param: userId
+        - userIdEndpoint:
+            kind: relativeurl
+            base: baseurl
+            relative: /users/
     params:
         reservationOrderId:
             name: reservationOrderId
             type: String
             resolver: DBReservationLoader
-        scope:
-            name: scope
-            type: String
-            resolver: EndpointScopeResolver
-            descr: Scope used in retrieval of something
+        userId:
+            name: userId
+            type: Int
+            resolver: UserIdResolver
+            descr: UserId used to access attributes 
         other:
             name: other
             type: String
             resolver: DBOtherResolver
     resolvers:
-        EndpointScopeResolver:
+        UserIdResolver:
             kind: EndpointResolver
-            endpoint: scope
+            endpoint: userIdEndpoint
             authentication: NameAndKey
         DBReservationLoader:
             kind: DatabaseResolver

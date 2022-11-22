@@ -17,15 +17,17 @@ from restmap.compiler.function.ResponseHandlerNode import ResponseHandlerNode
 
 # FUNCTION_COMPILER__________________________
 @dataclass 
-class FunctionResolutionSubgraph:
+class FunctionCompilationRequest:
     """
     A resolution graph nested subgraph specifying 
-    an executable functiono.
+    an executable function.
     
     It has to be extracted from the ResolutionGraph and 
     passed to the Function Constrcut Compiler class for compilation.
     """
-    graph: ResolutionGraph
+    url_generator: str
+    authentication: str
+
     
 @dataclass
 class DeploymentParams:
@@ -78,10 +80,10 @@ class FunctionCompiler(BaseCompiler):
     Tree structure allows the nodes to take their context
     into account when creating code fragments.
     """
-    def __init__(self, compilation_dir: str='./ingestless/restmap/src') -> None:
+    def __init__(self, compilation_dir: str='./ingestless/restmap/src', language:str="Python@3.9") -> None:
         super().__init__(compilation_dir)
 
-    def compile(self, function: ResolutionGraph) -> DeployableFunction:
+    def compile(self, head: CompilerNode, function: ResolutionGraph) -> DeployableFunction:
         """
         Assumes a loaded resolution graph that was transformed into the compilation graph
 
@@ -91,46 +93,29 @@ class FunctionCompiler(BaseCompiler):
         
         return: Function object that can be deployed through the backend provider
         """
-        # Compile the list of endpoints        for endpoint in graph._endpoints:
-        head = self._spawn_head()
+        code = ""
         # TODO Resolve the graph for all functions
-        self._compile_header(head, function)
-        self._compile_body(head, function)
-        self._compile_response(head, function) 
+        code += self._compile_header(head, function)
+        code += self._compile_request(head, function)
+        code += self._compile_body(head, function)
+        code += self._compile_response(head, function) 
 
-        #Load the template
-        template_name = "aws_lambda_python.jinja"
-        template = self.env.get_template(template_name)
+        # Passes the completed compilation graph to a specific compiler plugin
+        # allowing specific languages and framework combinations to implement the 
+        # compilation to code based on the same overall resolved compilation attributes
+        # that are passed to them at this point
         # Render code template
-        code = template.render(package_imports="from manager import test", dependent_functions="Dependents", documentation_strin="test doc string", return_statement="'A string return'")
-        requirements = self._compile_requirements()
+        requirements = self._compile_requirements(head)
         deployment_params = self._compile_params()
-        return  DeployableFunction(
+
+        return DeployableFunction(
             code=code,
             runtime="Python@3.9",
             requirements= requirements,
             params = deployment_params
         )
 
-    def _spawn_head(self) -> CompilerNode:
-        """
-        Stars a new parallel compilation tree head
-        
-        This enables the Compiler to compile multiple functions within 
-        a given compilation process.
-        """
-        head = CompilerNode(
-            _env = self.env,
-            _template = '',
-            _parent = None,
-            _children = [], 
-            code= '',
-            _is_enclosing = True
-        )
-        self.heads.append(head)
-        return head
-
-    def _compile_header(self, parent: CompilerNode, graph: ResolutionGraph):
+    def _compile_header(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
         """
         Extracts required attributes from ResolutionGraph and 
         instantiates the HeaderNode.
@@ -146,27 +131,48 @@ class FunctionCompiler(BaseCompiler):
         # Instantiate the node
         header = self.header(parent=parent)
         # Conditionally append authenticator
+        return header.compile_code()
 
+    def _compile_request(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
+        """
+        Compiles the request to be executed against the target endpoint
+        """
+        request = self.request(parent=parent)
+        # Generate all elements to be nested in the request object based on set parameters
 
+        # Compile the configured request handler to code and return code string
+        return request.compile_code()
         
-    def _compile_body(self, parent: CompilerNode, graph: ResolutionGraph):
+    def _compile_response(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
         """
-        Extracts required attributes from ResolutionGraph and 
-        instantiates the HeaderNode
+        Compiles the code handling the response object generation
+        from the serverless function
         """
-        # Extract all data from graph
-        # Instantiate the node
-        self.body_parser(parent=parent)
-
-    def _compile_response(self, parent: CompilerNode, graph: ResolutionGraph):
-        """
-        Extracts required attributes from ResolutionGraph and 
-        instantiates the HeaderNode
-        """
-        # Extract all data from graph
-        # Instantiate the node
-        self.response_handler(parent=parent)
+        response = self.response_handler(parent=parent)
+        # Attribute to the reponse object based on set parameters on the graph
         
+        return response.compile_code()
+
+    def _compile_body(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
+        """
+        Compiles the code logic to handle the core logic in the function
+        
+        This contains the main application logic provided by a library of plugins.
+        Based on available parameters of the function for standard procedures, 
+        or through `custom code components` that contain an executable to be
+        automatically executed in the function body.
+        """
+        body = self.body_parser(parent=parent)
+        # Attribute the list of associated plugins based on attributes on the graph
+
+        # Compile code
+        return body.compile_code()
+
+    def _compile_requirements(self, head: CompilerNode):
+        """
+        Compiles the list of requirements for the function to be executable
+        """
+        return {}
 
     def header(self, 
         parent: CompilerNode = None,
@@ -195,7 +201,7 @@ class FunctionCompiler(BaseCompiler):
         return header
          
     #TODO
-    def handler(self, 
+    def request(self, 
         template: str="functions/aws/",
         parent: CompilerNode = None, 
         ) -> HandlerNode.HandlerNode:
@@ -292,16 +298,6 @@ class FunctionCompiler(BaseCompiler):
             concurrency=10
         )
     # TODO: Remove and replace with build in jinja function
-    
-    def _compile_requirements(self) -> List[FunctionRequirement]:
-        """
-        Compiles the list of requirements for the function execution
-        """
-        requirements: List[FunctionRequirement] = []
-        # TODO Collect dependencies from components after compilation
-        # TODO Compile them into import statements in the function code
-        # TODO Compile them into a requirements format usable for image creation in docker and pre existing image installation
-        return requirements
     
     def _save_to_file(self, name:str, doc: str):
         """Output the compilation result to file location"""

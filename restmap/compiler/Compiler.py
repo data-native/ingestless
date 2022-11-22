@@ -2,12 +2,14 @@
 
 
 """
+from typing import List
 from enums import Constructs
 from restmap.compiler.BaseCompiler import BaseCompiler
 from restmap.resolver.ResolutionGraph import ResolutionGraph
+from restmap.resolver.nodes.resolvers import ResolverNode
 
-from restmap.compiler.function.FunctionCompiler import FunctionCompiler
-
+from restmap.compiler.function.FunctionCompiler import FunctionCompiler, FunctionCompilationRequest, DeployableFunction
+from restmap.compiler.CompilerNode import CompilerNode
 
 class Compiler(BaseCompiler):
     """
@@ -23,9 +25,10 @@ class Compiler(BaseCompiler):
     """ 
     def __init__(self, compilation_dir: str = './ingestless/restmap/src') -> None:
         super().__init__(compilation_dir)
+        #TODO Enable the compiler to receive a language compiler to select the type of compilation stack to use
         self._function_compiler = FunctionCompiler()
     
-    def from_resolution_graph(self, graph: ResolutionGraph):
+    def from_resolution_graph(self, graph: ResolutionGraph) -> List[DeployableFunction]:
         """
         Traverses the resolution graph to compile the required components
         using the logic implemented in the resource Compiler classes.
@@ -44,46 +47,66 @@ class Compiler(BaseCompiler):
         
         # Routes the template to the compilation method based on kind
         compilation_result = kind_switch[graph.kind](graph)
+        return compilation_result
       
-    def _compile_endpoint(self, graph: ResolutionGraph):
+    def _spawn_head(self) -> CompilerNode:
+        """
+        Starts a new parallel compilation tree head
+        
+        This enables the Compiler to compile multiple functions within 
+        a given compilation process.
+        """
+        head = CompilerNode(
+            _env = self.env,
+            _template = '',
+            _parent = None,
+            _children = [], 
+            code= '',
+            _is_enclosing = True
+        )
+        self.heads.append(head)
+        return head
+
+    def _compile_endpoint(self, graph: ResolutionGraph) -> List[DeployableFunction]:
       """
       Compile the endpoint schema
       * All resolvers need to be compiled to executable functionsSD The dependencies between the functions need to be passed to the orchestrator
       
       """
+      compiled_function_requests = [] 
       # Endpoints contain one or multiple endpoints
-      # All resolvers neeed to run for this endpoint to resolve
-      for resolver in graph._resolvers:
-        # The resolution should adapt 
-        self._compile_resolver(resolver)
       for endpoint in graph._endpoints:
-        self._compile_endpoint(endpoint)
-      # They can contain a base and a relative  
+        head = self._spawn_head()
+        # Want to retain the dependency graph
+        compiled_function_requests.append(self._function_compiler.compile(head, endpoint)) 
+
+      return compiled_function_requests
       
         
-    def _compile_resolver(self, resolver_graph: ResolutionGraph):
-      """Compile the endpoint schema"""
-      from restmap.compiler.function.FunctionCompiler import FunctionResolutionSubgraph
+    # TODO Document 
+    def _compile_resolver(self, resolver_graph: ResolverNode):
+      """
+      Compile the resolver configuration to a DeployableFunction
+      instance that can be send to the BackendProvider to deploy
+      a serverless function for the resolver. 
+      """
       # TODO Needs to cache/retrieve previously compiled resolvers when they are referenced multiple times
       # TODO A resolver mentioned in a parameter/endpoint node indicates that after compilation, the orchestrator needs to schedule a dependency
 
       # Resolvers can be of various types 
-      
-      # They can optionally contain parameters 
-      if resolver_graph._params:
-        # Parameters must also be resolved
-        for param in resolver_graph._params: 
-          # If the param requires a resolver (e.g. not a shared variable)
-          if param._resolver:
-            # Recursively resolve the resolver
-            # TODO Resolved value must be available within this context to resolve the overall parametrization for the endpoint
-            param_val = self._compile_resolver(param._resolver)
-          else:
-            # Compile the param node to retrieve the value
-            param_val = param.compile()
+      if resolver_graph.kind == 'EndpointResolver':
+        # Need to ensure the endpoint mentioned is resolvable
+        dependent_resolver = resolver_graph.endpoint
+        pass
+      elif resolver_graph.kind == 'DBResolver':
+        # Needs to create a DB resolution logic in the function
+        # Extract the connection str and validate
+        # Generate the fully parametrized url
+        pass
+
       # After this point all parameters should be resolved within the scope
       # Now create the resolver as a function
-      function_graph = FunctionResolutionSubgraph(resolver_graph)
+      function_graph = FunctionCompilationRequest(resolver_graph)
       function_deployment = self._function_compiler.compile(function_graph)
       # Returns a configuration class capable of instructing the provider Backend to deploy a function
       return function_deployment

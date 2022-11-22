@@ -24,26 +24,26 @@ class TestFunctionCompilation:
         
 
     def test_add_request_handler(self, func_compiler: FunctionCompiler):
-        handler_node = func_compiler.handler()
+        handler_node = func_compiler.request()
         assert isinstance(handler_node, HandlerNode.HandlerNode)
         assert func_compiler.heads[0]._children[0] == handler_node
     
     def test_add_nested_request_handler(self, func_compiler: FunctionCompiler):
-        handler = func_compiler.handler(
+        handler = func_compiler.request(
             template='functions/api_request.jinja'
         )
-        handler.compile()
+        handler.compile_code()
         # Introduce nested elements
 
     def test_compile_header(self, func_compiler: FunctionCompiler):
-        handler = func_compiler.handler(
+        handler = func_compiler.request(
             template='functions/api_request.jinja'
         )
-        handler.compile()
+        handler.compile_code()
         
     def test_compile_body_parser(self, func_compiler: FunctionCompiler):
         parser = func_compiler.body_parser()
-        response = parser.compile()
+        response = parser.compile_code()
         assert response
         assert isinstance(response, str)
 
@@ -72,5 +72,5 @@ class TestCompilerNode:
     def test_compile_subtree(self, func_compiler: FunctionCompiler):
         head = func_compiler.header()
         head.child(func_compiler.authenticator())
-        output_head = head.compile()
+        output_head = head.compile_code()
         assert head        

@@ -14,5 +14,6 @@ class ResponseHandlerNode(ResponseHandlerDefaults, CompilerNode , ResponseHandle
     """
     Handles the compilation of response handler logic
     """
-    def compile(self):
-        pass
+
+    def compile_code(self):
+        return "<<Response Handler>>"

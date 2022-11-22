@@ -20,17 +20,30 @@ Main features to be ensured
 """
 import pytest
 from restmap.templateParser.TemplateParser import TemplateParser
-from restmap.resolver.Resolver import Resolver
+from restmap.resolver.Resolver import Resolver, ResolutionGraph
 from restmap.compiler.Compiler import Compiler
+from restmap.compiler.function.FunctionCompiler import DeployableFunction
 
 @pytest.fixture
 def compiler():
   return Compiler()
 
-def test_from_resolution_graph(compiler: Compiler):
-  template = TemplateParser().load('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+@pytest.fixture
+def template():
+  return TemplateParser().load('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+
+@pytest.fixture
+def res_graph(template):
   resolver = Resolver()
-  resolutionGraph = resolver.resolve(template)
-  compiler.from_resolution_graph(resolutionGraph)
+  return resolver.resolve(template)
+
+def test_from_resolution_graph(compiler: Compiler, res_graph: ResolutionGraph):
+  deployment = compiler.from_resolution_graph(res_graph)
+  assert all([isinstance(d, DeployableFunction) for d in deployment ]), "Compilation should return a list of DeployableComponent instances"
+  
+#TODO Extend the tests
+def test_compile_endpoint(compiler: Compiler, res_graph: ResolutionGraph):
+  deployment = compiler.from_resolution_graph(res_graph)
+  
   
   

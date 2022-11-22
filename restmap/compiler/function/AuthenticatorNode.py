@@ -12,7 +12,7 @@ class AuthenticatorNodeDefaults:
 @dataclass
 class AuthenticatorNode(CompilerNode):
 
-    def compile(self) -> str:
+    def compile_code(self) -> str:
         """
         Compiles the authentication code 
         """
