@@ -23,11 +23,12 @@ class HeaderNode(CompilerNode):
         response_types_allowed = ','.join(['text/html', 'application/xhtml+xml'])
         response_language_allowed = 'en-US'
         cache_max_age = "cache-max-age=0"
-        dict = {
-            'User-Agent': agent,
-            'Accept': response_types_allowed,
-            'Accept-Language': response_language_allowed,
-            'Cache-Control': cache_max_age
+        param_dict = {
+            'header': {
+                'User-Agent': agent,
+                'Accept': response_types_allowed,
+                'Accept-Language': response_language_allowed,
+                'Cache-Control': cache_max_age
+            }
         }
-    
-        return "<<HEADER CODE>>"
+        return self._render_template(param_dict)

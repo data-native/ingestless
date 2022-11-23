@@ -82,8 +82,6 @@ class Compiler(BaseCompiler):
 
       return compiled_function_requests
       
-        
-    # TODO Document 
     def _compile_resolver(self, resolver_graph: ResolverNode):
       """
       Compile the resolver configuration to a DeployableFunction

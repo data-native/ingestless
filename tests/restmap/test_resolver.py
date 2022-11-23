@@ -26,7 +26,7 @@ def template(parser: TemplateParser, template_path: Path):
 
 @pytest.fixture
 def manager():
-    return Manager()
+    return Manager(backend='AWS', name='TestStack')
 
 # TESTS________________
 class TestNodeResolution:

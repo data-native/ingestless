@@ -17,11 +17,13 @@ class CompilerNode:
 
     def child(self, node: 'CompilerNode'):
         self._children.append(node)
+        self._is_enclosing = True
 
     def sibbling(self, node: 'CompilerNode'):
         self._parent.child(node)
+        self._parent._is_enclosing = True
     
-    def compile(self, node: 'CompilerNode'=None):
+    def compile(self, node: 'CompilerNode'=None) -> str:
         """
         Traverse the generated compilation tree and resolve each element
         given its own parameters and the neighborhoud of its parent and
@@ -38,8 +40,17 @@ class CompilerNode:
             for child in node._children:
                 self.code += child.compile_code()
                 self._children = [node for node in self._children if node != child]
-        self.compile_code()
+        self.code += self.compile_code()
         return self.code 
+
+    def _render_template(self, arg_dict: dict) -> str:
+        """
+        Renders the code template
+        """
+        # TODO Enhace passing of an instance that validated the required dict keys are present
+        assert isinstance(arg_dict, dict)
+        template = self._env.get_template(self._template)
+        return template.render(arg_dict)
 
     def compile_code(self):
         """

@@ -93,8 +93,13 @@ class FunctionCompiler(BaseCompiler):
         
         return: Function object that can be deployed through the backend provider
         """
+        # TODO Elaborate the validation logic to handle optional or missing elements in the construct definition
+        expected_nodes = [HeaderNode.HeaderNode, HandlerNode.HandlerNode, BodyParserNode.BodyParserNode, ResponseHandlerNode]
+        assert all([node in head._children] for node in expected_nodes)
+
         code = ""
         # TODO Resolve the graph for all functions
+        # TODO Handle the fact if not all elements are valid
         code += self._compile_header(head, function)
         code += self._compile_request(head, function)
         code += self._compile_body(head, function)
@@ -175,8 +180,7 @@ class FunctionCompiler(BaseCompiler):
         return {}
 
     def header(self, 
-        parent: CompilerNode = None,
-        authentication: str = None,
+        parent: CompilerNode,
         template:str="functions/aws/header.jinja",
     ) -> HeaderNode.HeaderNode:
         """
@@ -194,86 +198,8 @@ class FunctionCompiler(BaseCompiler):
             _children=[]
             )
         self._append_to_parent(parent, header)
-        # Handle Authentication
-        if authentication:
-            header.child(self, self.authenticator())
-
         return header
          
-    #TODO
-    def request(self, 
-        template: str="functions/aws/",
-        parent: CompilerNode = None, 
-        ) -> HandlerNode.HandlerNode:
-        """
-        Create the compiled handler Node
-        """
-        handler = HandlerNode.HandlerNode(
-                _template=template, 
-                _env=self.env, 
-                _parent=None, 
-                _children=[], 
-                code='Handler Code\n')
-        self._append_to_parent(parent, handler)
-        return handler
-    
-    def body_parser(self, 
-        template:str="functions/aws/body_parser.jinja",
-        parent: CompilerNode = None,
-        ) -> BodyParserNode.BodyParserNode:
-        parser = BodyParserNode.BodyParserNode(
-            _template=template,
-            _env=self.env, 
-            _parent=None,
-            _children=[]
-            )
-        self._append_to_parent(parent, parser)
-        return parser
-
-    def response_handler(self,
-        parent: CompilerNode = None, 
-        template:str="functions/aws/response_handler.jinja",
-        parse_to: str = 'json',
-        escape_strings: bool = False,
-        ):
-        """
-        Parametrizes and appends a ResponseHandler Node to the compilation graph.
-
-        Response generation and handling 
-        """
-        response_handler = ResponseHandlerNode(
-            _template=template,
-            _env=self.env, 
-            _parent=None, 
-            _children=[]
-        )
-        self._append_to_parent(parent, response_handler)
-        return response_handler
-    
-    def authenticator(self,
-        parent: CompilerNode = None,
-        template:str="functions/aws/authenticator.jinja",
-    ) -> AuthenticatorNode:
-        """
-        Parametrizes and appends an authenticator to the given parent node
-
-        Authentication methods supported
-        --------------------------------
-        Basic Auth:
-        API Key:
-        OAuth 2.0:
-        OpenIDConnect:
-        """
-        authenticator = AuthenticatorNode(
-            _template=template,
-            _env=self.env,
-            _parent=None,
-            _children=[]
-        )
-        self._append_to_parent(parent, authenticator)
-        return authenticator
-        
-
     def _compile_params(self) -> DeploymentParams:
         """
         Compiles the deployment parameters for the function
@@ -299,6 +225,80 @@ class FunctionCompiler(BaseCompiler):
         )
     # TODO: Remove and replace with build in jinja function
     
+    #TODO
+    def request(self, 
+        parent: CompilerNode, 
+        template: str="functions/aws/",
+        ) -> HandlerNode.HandlerNode:
+        """
+        Create the compiled handler Node
+        """
+        handler = HandlerNode.HandlerNode(
+                _template=template, 
+                _env=self.env, 
+                _parent=None, 
+                _children=[], 
+                code='Handler Code\n')
+        self._append_to_parent(parent, handler)
+        return handler
+    
+    def body_parser(self, 
+        parent: CompilerNode,
+        template:str="functions/aws/body_parser.jinja",
+        ) -> BodyParserNode.BodyParserNode:
+        parser = BodyParserNode.BodyParserNode(
+            _template=template,
+            _env=self.env, 
+            _parent=None,
+            _children=[]
+            )
+        self._append_to_parent(parent, parser)
+        return parser
+
+    def response_handler(self,
+        parent: CompilerNode, 
+        template:str="functions/aws/response_handler.jinja",
+        parse_to: str = 'json',
+        escape_strings: bool = False,
+        ):
+        """
+        Parametrizes and appends a ResponseHandler Node to the compilation graph.
+
+        Response generation and handling 
+        """
+        response_handler = ResponseHandlerNode(
+            _template=template,
+            _env=self.env, 
+            _parent=None, 
+            _children=[]
+        )
+        self._append_to_parent(parent, response_handler)
+        return response_handler
+    
+    def authenticator(self,
+        parent: CompilerNode,
+        template:str="functions/aws/authenticator.jinja",
+    ) -> AuthenticatorNode:
+        """
+        Parametrizes and appends an authenticator to the given parent node
+
+        Authentication methods supported
+        --------------------------------
+        Basic Auth:
+        API Key:
+        OAuth 2.0:
+        OpenIDConnect:
+        """
+        authenticator = AuthenticatorNode(
+            _template=template,
+            _env=self.env,
+            _parent=None,
+            _children=[]
+        )
+        self._append_to_parent(parent, authenticator)
+        return authenticator
+        
+
     def _save_to_file(self, name:str, doc: str):
         """Output the compilation result to file location"""
         self.output_location.mkdir()
@@ -308,6 +308,6 @@ class FunctionCompiler(BaseCompiler):
 
     def _append_to_parent(self, parent: CompilerNode, node: CompilerNode):
         """Appends to given parent, or else to Compilation Tree root"""
-        parent = parent if parent else self._spawn_head()
         parent.child(node) 
+
 

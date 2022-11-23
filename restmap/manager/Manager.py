@@ -26,21 +26,30 @@ from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
 from restmap.compiler.Compiler import Compiler
-from restmap.
+from restmap.executor.AWS.AWSProvider import AWSInfraProvider
+from restmap.executor.BaseProvider import BaseBackendProvider
+
 class Manager:
     """
     
     """
 
-    def __init__(self) -> None:
+    def __init__(self, backend: str, name: str) -> None:
         self._parser = TemplateParser()
         self._resolver = Resolver()
         #TODO Extend to handle multiple compilation processes
         self._compiler= Compiler()
         self._state = State()
-        self._provider = 
+        self._provider = self._init_backend_provider(backend, name)
         self._compiled_deployables = []
-        
+    
+    def _init_backend_provider(self, backend: str, name: str) -> BaseBackendProvider:
+        """Initializes the Provider instance for the chosen backend service"""
+        if backend in ['aws', 'AWS']:
+            return AWSInfraProvider(name)
+        else:
+            return f"No BackendProvider implemented for backend: {backend}"
+
     def validate(self, path: Union[str, Path]):
         """
         Validate the configuration files in the local environment
@@ -81,9 +90,8 @@ class Manager:
 
         else:
             # Compile code for the function
-
-            # Use the code to parametrize the function
-
+            for construct in self._compiled_deployables:
+                self._provider.deploy(construct)
 
     def init(self):
         """

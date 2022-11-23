@@ -16,5 +16,5 @@ class AuthenticatorNode(CompilerNode):
         """
         Compiles the authentication code 
         """
-        pass
+        return "<<<Authenticator Code>>>"
 

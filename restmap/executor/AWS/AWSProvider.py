@@ -14,7 +14,7 @@ class Stack(cdk.Stack):
     def __init__(self, scope: cdk.App, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
-class AWSBackendProvider():
+class AWSInfraProvider():
     """
     Implements the configuration and deployment logic
     against AWS using the AWS CDK. 
