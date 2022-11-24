@@ -19,7 +19,10 @@ class DBResolver(_DBResolverDefaults, ResolverNode, _DBResolverBase):
     """
     Resolves data from a connection to a database.
     """
-    
+    #TODO: Ensure multiple consumers can read thee same data from the generator 
+     
     def resolve(self, provider):
-        pass
+        """
+        """
+        yield 
         

@@ -18,7 +18,7 @@ def parser():
 
 @pytest.fixture
 def template_path():
-    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
+    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
 
 @pytest.fixture
 def template(parser: TemplateParser, template_path: Path):
@@ -26,7 +26,7 @@ def template(parser: TemplateParser, template_path: Path):
 
 @pytest.fixture
 def manager():
-    return Manager()
+    return Manager(backend='AWS', name='TestStack')
 
 # TESTS________________
 class TestNodeResolution:
@@ -37,9 +37,11 @@ class TestNodeResolution:
         template:TemplateSchema, 
         resolver: Resolver
         ):
-        manager.register(template_path)
+        manager.plan(template_path)
         endpoint = template.config.endpoints[0]
-        response = resolver._resolve_endpoint(name=endpoint['name'], endpoint=endpoint)
+        name = list(endpoint.keys())[0]
+        endpoint_dict = endpoint[name]
+        response = resolver._resolve_endpoint(name, endpoint_dict)
         assert isinstance(response, EndpointNode.EndpointNode)
         
     def test__resolve_resolvers(self, 
@@ -48,7 +50,7 @@ class TestNodeResolution:
         template:TemplateSchema, 
         resolver: Resolver
         ):
-        manager.register(template_path)
+        manager.plan(template_path)
         resolver_dict = template.config.resolvers[0]
         response = resolver._resolve_resolver(resolver_dict)
         assert isinstance(response, EndpointNode.EndpointNode)

@@ -17,7 +17,7 @@ class ComponentDict:
     endpoints: dict = field(default_factory=dict)
     resolvers: dict = field(default_factory=dict)
     params: dict = field(default_factory=dict)
-    metadata: dict = field(default_factory=dict)
+    # metadata: dict = field(default_factory=dict)
      
 @dataclass
 class StateDict:
@@ -35,11 +35,13 @@ class StateDict:
          
         # Ensure the elements get resolved first
         component_dict = ComponentDict(
-            endpoints=template.config.endpoints,
-            resolvers=template.config.resolvers,
-            params=template.config.params,
-            metadata=template.metadata
+            endpoints=template._endpoints,
+            resolvers=template._resolvers,
+            params=template._params,
+            # metadata=template._met
         )
+        state = {} # TODO: Define state (or remove it not necessary. Currently just a placeholder without defined purpose)
+            
         return StateDict(components=component_dict, state=state)
 
     def get_diff(self, other: 'StateDict'):
@@ -47,6 +49,7 @@ class StateDict:
         Compute the difference between the current and other state
         dict in terms of additions and removals
         """
+        return other
         # Check if identical and if return early
 
         # Compute set difference
@@ -56,7 +59,6 @@ class StateDict:
         # Compute additions
 
         # return removals, additions
-        raise NotImplementedError
     
 
 class State:
@@ -90,9 +92,9 @@ class State:
         # Check that StateDict is valid
         updated_state = StateDict.from_resolutiongraph(update)
         # Compile to 
-        diff = self.state.get_diff(updated_state)
-        if not diff:
-            return StatusCode.FILE_ERROR
+        # diff = self.state.get_diff(updated_state)
+        # if not diff:
+            # return StatusCode.FILE_ERROR
 
         self._state[self.version + 1] = updated_state
         return StatusCode.SUCCESS

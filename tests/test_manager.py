@@ -6,11 +6,12 @@ from random import randint
 from cron_converter import Cron
 from typer.testing import CliRunner
 
-from manager.database import DatabaseHandler
 from enums import StatusCode
+from manager.database import DatabaseHandler
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.types import ScheduleItem
 from manager.manager import Manager
+from restmap.executor.AWS.AWSProvider import AWSInfraProvider
 
 
 runner = CliRunner()
@@ -88,6 +89,14 @@ test_data1 = {
         "name": "test"
     },
 }
+
+
+class TestInitialization:
+
+    def test_init_backend_provider(local_manager: Manager):
+        manager = Manager('AWS')
+        assert isinstance(manager, AWSInfraProvider)
+        
 
 # FUNCTIONS_________________
 class TestFunctionManager:

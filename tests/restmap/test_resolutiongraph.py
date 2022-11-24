@@ -4,10 +4,11 @@ from restmap.templateParser.TemplateParser import TemplateSchema, TemplateParser
 from restmap.resolver.ResolutionGraph import ResolutionGraph
 from restmap.resolver.nodes import EndpointNode, ParamNode, BaseNode
 from restmap.resolver.nodes.resolvers.ResolverNode import ResolverNode
+from restmap.resolver.nodes.resolvers.EndpointResolver import EndpointResolver
 
 @pytest.fixture()
 def template_path():
-    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
+    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
 
 @pytest.fixture
 def graph():
@@ -18,7 +19,7 @@ def resolver(template_path: Path):
     parser = TemplateParser()
     template = parser.load(template_path)
     resolver_name = list(template.config.resolvers.keys())[0]
-    resolver = ResolverNode(
+    resolver = EndpointResolver(
         name = resolver_name,
         **template.config.resolvers[resolver_name]
     )
@@ -34,12 +35,12 @@ def param(resolver: ResolverNode):
 
 @pytest.fixture
 def endpoint(param: ParamNode.ParamNode):
-    endpoint_dict = {
-        'name': 'google_maps_api',
-        'base_url': 'https://www.google.com/',
-        'params': [param]
-    }
-    endpoint = EndpointNode.EndpointNode(**endpoint_dict)
+    endpoint = EndpointNode.EndpointNode(
+        kind='BaseEndpoint',
+        descr='',
+        name="",
+        params=[param],
+    )
     return endpoint
 
 class TestEndpoints:
@@ -56,22 +57,22 @@ class TestEndpoints:
 class TestParameters:
 
     def test_add_param(self, graph: ResolutionGraph, param: ParamNode.ParamNode):
-        response = graph.add_parameter(name=param.name, param=param)
+        response = graph.add_parameter(param)
         assert len(graph._params) == 1, "must add ParamNode to array of parameters"
 
     def test_remove_param(self, graph: ResolutionGraph, param: ParamNode.ParamNode):
-        graph.add_parameter(name=param.name, param=param) 
+        graph.add_parameter(param) 
         response = graph.remove_parameter(param.name)
         assert len(graph._params) == 0, "must remove EndpointNode from array of endpoints"
     
 class TestResolvers:
 
     def test_add_resolver(self, graph: ResolutionGraph, resolver: ResolverNode):
-        response = graph.add_resolver(name=resolver.name, resolver=resolver)
+        response = graph.add_resolver(resolver)
         assert len(graph._resolvers) == 1, "must add ParamNode to array of parameters"
         assert graph._resolvers[resolver.name] == resolver
 
     def test_remove_resolver(self, graph: ResolutionGraph, resolver: ResolverNode):
-        graph.add_resolver(name=resolver.name, resolver=resolver) 
+        graph.add_resolver(resolver) 
         response = graph.remove_resolver(resolver.name)
         assert len(graph._resolvers) == 0, "must remove EndpointNode from array of endpoints"

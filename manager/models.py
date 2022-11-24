@@ -9,7 +9,8 @@ from pynamodb.attributes import UnicodeAttribute, BinaryAttribute, BooleanAttrib
 parser = configparser.ConfigParser()
 parser.read('./manager/config.ini')
 
-env = 'dev' if system().lower() == 'darwin' else 'prod'
+# env = 'dev' if system().lower() == 'darwin' else 'prod'
+env = 'dev'
 
 HOST = parser[env]['dynamodb_host']
 

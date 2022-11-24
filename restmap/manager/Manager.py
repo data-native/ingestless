@@ -21,21 +21,47 @@ from typing import Union
 from pathlib import Path
 
 from enums import StatusCode
+from enums import Services
 from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
+from restmap.compiler.Compiler import Compiler
+from restmap.executor.AWS.AWSProvider import AWSInfraProvider
+from restmap.executor.BaseProvider import BaseBackendProvider
 
 class Manager:
     """
     
     """
 
-    def __init__(self) -> None:
+    def __init__(self, backend: str, name: str) -> None:
         self._parser = TemplateParser()
         self._resolver = Resolver()
+        #TODO Extend to handle multiple compilation processes
+        self._compiler= Compiler()
         self._state = State()
-        
-    def register(self, path: Union[str, Path]) -> StatusCode:
+        self._provider = self._init_backend_provider(backend, name)
+        self._compiled_deployables = []
+    
+    def _init_backend_provider(self, backend: str, name: str) -> BaseBackendProvider:
+        """Initializes the Provider instance for the chosen backend service"""
+        if backend in ['aws', 'AWS']:
+            return AWSInfraProvider(name)
+        else:
+            return f"No BackendProvider implemented for backend: {backend}"
+
+    def validate(self, path: Union[str, Path]):
+        """
+        Validate the configuration files in the local environment
+        """
+        # Ensure they can be parsed correctly
+        template_dict = self._parser.load(path)
+        # Ensure the elements can be placed onto the graph
+        execution_graph = self._resolver.resolve(template_dict)
+
+        raise NotImplementedError
+
+    def plan(self, path: Union[str, Path]) -> StatusCode:
         """
         Registers a components defined in a given storage location
         """
@@ -45,29 +71,28 @@ class Manager:
         resolution_graph = self._resolver.resolve(template)
         # Store updated version
         self._state.state = resolution_graph
-        # 
+        # Compile the deployable assets
+        self._compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
         return StatusCode.SUCCESS
-    
-    def validate(self, path: Union[str, Path]):
-        """
-        Validate the configuration files in the local environment
-        """
-        # Ensure they can be parsed correctly
-        # template_dict = self._parser.load(path)
-        # Ensure the elements can be placed onto the graph
-        execution_graph = self._resolver.resolve(template_dict)
 
-        raise NotImplementedError
-
-    def describe(self, component: str):
+    def deploy(self):
         """
-        Compiles a description of the component for introspection
+        Deploys the planend (resolved and compiled) elements onto
+        the backend provider.
         """
-        # Prepare the attribute filter
+        #TODO Extend to handle a list of individual templates to deploy in one step
+        # Validate that 
+        if not self._compiled_deployables:
+            # Try reading from set configuration location on default
+            # Check that there is a difference to deploy
+            # If not quit => 
+            return "There is currently no planned deployment. Use `plan(template_path)` to register your templates" 
 
-        # Get component from state
-        component = self._state._get(component)
-    
+        else:
+            # Compile code for the function
+            for construct in self._compiled_deployables:
+                self._provider.deploy(construct)
+
     def init(self):
         """
         Initialize the local environment 
