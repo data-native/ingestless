@@ -142,7 +142,7 @@ class TestCompilerNode:
     def test_can_add_sibling(self, manager: Manager, node: CompilerNode):
         head = manager._compiler._spawn_head()
         node = node(None, '', head, [])
-        header = HeaderNode.HeaderNode(None, '', None, [])
+        header = HeaderNode.HeaderNode(manager._compiler.env, 'functions/aws/body_parser.jinja', None, [])
         node.sibbling(node=header)
         assert len(node._children) == 0
         assert len(head._children) == 1
@@ -154,7 +154,7 @@ class TestCompilerNode:
         )
     def test_compile_flat_construct(self, node: CompilerNode, manager: Manager, func_compiler: FunctionCompiler):
         head = manager._compiler._spawn_head()
-        node = node(manager._compiler.env, '', head, [])
+        node = node(manager._compiler.env, 'functions/aws/body_parser.jinja', head, [])
         output = node.compile()
         assert output
          
@@ -165,7 +165,7 @@ class TestCompilerNode:
         )
     def test_compile_subtree(self, node: CompilerNode, manager: Manager, func_compiler: FunctionCompiler):
         head = manager._compiler._spawn_head()
-        construct = node(manager._compiler.env, 'functions/aws/bodyparser.jinja', head, [])
+        construct = node(manager._compiler.env, 'functions/aws/body_parser.jinja', head, [])
         auth = AuthenticatorNode.AuthenticatorNode(None, '', construct, []) 
         output = construct.compile()
         assert isinstance(output, str)    
@@ -176,7 +176,7 @@ class TestCompilerNode:
         )
     def test_compile_multi_nested_subtree(self, node: CompilerNode, manager: Manager, func_compiler: FunctionCompiler):
         head = manager._compiler._spawn_head()
-        construct = node(manager._compiler.env, 'functions/aws/bodyparser.jinja', head, [])
+        construct = node(manager._compiler.env, 'functions/aws/body_parser.jinja', head, [])
         # TODO find a way to generalize the templates used here
         auth = AuthenticatorNode.AuthenticatorNode(manager._compiler.env, '', construct, []) 
         hander = ResponseHandlerNode.ResponseHandlerNode(manager._compiler.env, '', auth, [])
