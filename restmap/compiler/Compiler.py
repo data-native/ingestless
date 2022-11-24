@@ -61,7 +61,7 @@ class Compiler(BaseCompiler):
             _template = '',
             _parent = None,
             _children = [], 
-            code= '',
+            _code= '',
             _is_enclosing = True
         )
         self.heads.append(head)

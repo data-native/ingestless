@@ -2,10 +2,10 @@
 import pytest
 from pathlib import Path
 from restmap.manager.Manager import Manager
-from restmap.resolver.ResolutionGraph import ResolutionGraph
-from restmap.compiler.Compiler import Compiler
+from restmap.templateParser.schemata import TemplateSchema
+from restmap.compiler.Compiler import Compiler, CompilerNode
 from restmap.compiler.function.FunctionCompiler import FunctionCompiler, DeployableFunction, DeploymentParams 
-from restmap.compiler.function import HeaderNode, HandlerNode
+from restmap.compiler.function import HeaderNode, HandlerNode, AuthenticatorNode, BodyParserNode, RequestNode, ResponseHandlerNode
 
 @pytest.fixture
 def compiler():
@@ -50,6 +50,13 @@ class TestCompiler:
     def test_from_resolution_graph_resolver(self, manager: Manager, compiler: Compiler):
         raise NotImplementedError
 
+
+class TestHeaderNode:
+    """Test the individual nodes"""
+    def test_compile_code(self, node: CompilerNode):
+        """Ensure compilation with parameters works"""
+        raise NotImplementedError
+        
 class TestFunctionCompiler:
 
     def test_initialize_graph(self, func_compiler: FunctionCompiler):
@@ -60,7 +67,6 @@ class TestFunctionCompiler:
         header_node = func_compiler.header(head)
         assert isinstance(header_node, HeaderNode.HeaderNode)
         assert len(compiler.heads) == 1, "calling head without parent defined must create parallel compilation tree"
-        
 
     def test_add_request_handler(self, compiler: Compiler, func_compiler: FunctionCompiler):
         head = compiler._spawn_head()
@@ -84,6 +90,8 @@ class TestFunctionCompiler:
         assert handler._children[0] == auth
         # Introduce nested elements
 
+    
+
     def test_compile_header(self, compiler: Compiler, func_compiler: FunctionCompiler):
         head = compiler._spawn_head()
         handler = func_compiler.request(
@@ -101,11 +109,12 @@ class TestFunctionCompiler:
         assert response
         assert isinstance(response, str)
 
-    def test_compile(self, graph: ResolutionGraph, compiler: Compiler, func_compiler: FunctionCompiler):
+    def test_compile(self, graph: TemplateSchema, compiler: Compiler, func_compiler: FunctionCompiler):
         # Compiler manages the heads, ResolutionGraph defines the attributes for compilation of constructs 
-        function = graph._endpoints[0] 
+        function = graph.config.endpoints[0] 
         head = compiler._spawn_head()
-        function_deply = func_compiler.compile(function, head)
+        header = func_compiler.header(head)
+        function_deply = func_compiler.compile(head, function)
         # Assert there is a response object that is a string
         assert isinstance(function_deply, DeployableFunction), "Compiling a function must return a DeployableFunction instance"
         assert isinstance(function_deply.code, str), "Compiled code must be returned as a string"
@@ -113,19 +122,65 @@ class TestFunctionCompiler:
         # Assert a python file is generated in the target src location
         # Assert 
     
-
 class TestCompilerNode:
 
-    def test_compile_flat_construct(self, manager: Manager, func_compiler: FunctionCompiler):
-        head = manager._compiler._spawn_head()
-        header = func_compiler.header(head)
-        assert header
+    @pytest.mark.parametrize(
+        "node", 
+        [HeaderNode.HeaderNode, ResponseHandlerNode.ResponseHandlerNode, BodyParserNode.BodyParserNode, AuthenticatorNode.AuthenticatorNode]
+        )
+    def test_can_nest_child(self, node: CompilerNode):
+        node = node(None, '', None, [])
+        head = HeaderNode.HeaderNode(None, '', None, [])
+        node.child(node=head)
+        assert len(node._children) == 1
+        assert node._children[0] == head
 
-    def test_compile_subtree(self, manager: Manager, func_compiler: FunctionCompiler):
+    @pytest.mark.parametrize(
+        "node", 
+        [HeaderNode.HeaderNode, ResponseHandlerNode.ResponseHandlerNode, BodyParserNode.BodyParserNode, AuthenticatorNode.AuthenticatorNode]
+        )
+    def test_can_add_sibling(self, manager: Manager, node: CompilerNode):
         head = manager._compiler._spawn_head()
-        header = func_compiler.header(head)
-        auth = func_compiler.authenticator(header)
-        output = header.compile()
+        node = node(None, '', head, [])
+        header = HeaderNode.HeaderNode(None, '', None, [])
+        node.sibbling(node=header)
+        assert len(node._children) == 0
+        assert len(head._children) == 1
+        assert head._children[0] == header
+
+    @pytest.mark.parametrize(
+        "node", 
+        [HeaderNode.HeaderNode, ResponseHandlerNode.ResponseHandlerNode, BodyParserNode.BodyParserNode, AuthenticatorNode.AuthenticatorNode]
+        )
+    def test_compile_flat_construct(self, node: CompilerNode, manager: Manager, func_compiler: FunctionCompiler):
+        head = manager._compiler._spawn_head()
+        node = node(manager._compiler.env, '', head, [])
+        output = node.compile()
+        assert output
+         
+
+    @pytest.mark.parametrize(
+        "node", 
+        [HeaderNode.HeaderNode, ResponseHandlerNode.ResponseHandlerNode, BodyParserNode.BodyParserNode, AuthenticatorNode.AuthenticatorNode]
+        )
+    def test_compile_subtree(self, node: CompilerNode, manager: Manager, func_compiler: FunctionCompiler):
+        head = manager._compiler._spawn_head()
+        construct = node(manager._compiler.env, 'functions/aws/bodyparser.jinja', head, [])
+        auth = AuthenticatorNode.AuthenticatorNode(None, '', construct, []) 
+        output = construct.compile()
+        assert isinstance(output, str)    
+
+    @pytest.mark.parametrize(
+        "node", 
+        [HeaderNode.HeaderNode, ResponseHandlerNode.ResponseHandlerNode, BodyParserNode.BodyParserNode, AuthenticatorNode.AuthenticatorNode]
+        )
+    def test_compile_multi_nested_subtree(self, node: CompilerNode, manager: Manager, func_compiler: FunctionCompiler):
+        head = manager._compiler._spawn_head()
+        construct = node(manager._compiler.env, 'functions/aws/bodyparser.jinja', head, [])
+        # TODO find a way to generalize the templates used here
+        auth = AuthenticatorNode.AuthenticatorNode(manager._compiler.env, '', construct, []) 
+        hander = ResponseHandlerNode.ResponseHandlerNode(manager._compiler.env, '', auth, [])
+        output = construct.compile()
         assert isinstance(output, str)    
     
     def test_render_template(self, manager: Manager, func_compiler: FunctionCompiler):
@@ -134,3 +189,4 @@ class TestCompilerNode:
         response = header.compile_code()
         assert isinstance(response, str), "Must return a code string rendered by the template"
         #TODO Extend the assertions on the template rendering process applied here
+    

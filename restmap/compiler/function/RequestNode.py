@@ -13,5 +13,11 @@ class HeaderNodeDefaults:
 class RequestNode(CompilerNode):
 
     def compile_code(self, node: 'CompilerNode' = None):
-        
-        return "<<REQUEST HANDLING CODE>>"
+        return self._render_template({
+            'REQUEST_METHOD': 'get',
+            'METHOD_PARAMS': {
+                'something': 'first'
+            }
+        }) 
+
+    # OPTIONAL COMPILATIOMN

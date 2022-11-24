@@ -14,9 +14,8 @@ class BodyParserNode(BodyParserNodeDefaults, CompilerNode, BodyParserNodeBase):
     
     def compile_code(self):
         """
-        
+        Body Parser compiles the body parsing logic
+        into the file
         """
-        return "<<BODY PARSING CODE>>"
+        return self._render_template() 
         
-    def _compile_enclosed_nodes(self):
-        raise NotImplementedError

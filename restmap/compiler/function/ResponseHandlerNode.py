@@ -16,4 +16,13 @@ class ResponseHandlerNode(ResponseHandlerDefaults, CompilerNode , ResponseHandle
     """
 
     def compile_code(self):
-        return "<<Response Handler>>"
+        """
+        Extract parameters for the compilation from the 
+        """
+        param_dict = {
+            'reponse' : {
+                'statusCode': '200',
+                'body': 'json.dumps(body)'
+            }        
+        }
+        return self._render_template(param_dict)

@@ -7,10 +7,13 @@ class HeaderNodeBase:
     
 @dataclass
 class HeaderNodeDefaults:
-    agent: str = "TestAgent: Chrome"
+    UserAgent: str = "TestAgent: Chrome"
+    Accept: str = "text/html, application/json"
+    AcceptLanguage: str = 'en-US'
+    cache_max_age = "cache-max-age=0"
 
 @dataclass
-class HeaderNode(CompilerNode):
+class HeaderNode(HeaderNodeDefaults, CompilerNode, HeaderNodeBase):
 
     def compile_code(self) -> str:
         """
@@ -19,16 +22,9 @@ class HeaderNode(CompilerNode):
         
         return: A configuration dict passed 
         """
-        agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9)"
-        response_types_allowed = ','.join(['text/html', 'application/xhtml+xml'])
-        response_language_allowed = 'en-US'
-        cache_max_age = "cache-max-age=0"
-        param_dict = {
-            'header': {
-                'User-Agent': agent,
-                'Accept': response_types_allowed,
-                'Accept-Language': response_language_allowed,
-                'Cache-Control': cache_max_age
-            }
-        }
-        return self._render_template(param_dict)
+        # Retrieve the list of parameters set on the inh
+        
+        # Call the set of functions to generate the code
+        return self._render_template()
+    
+    

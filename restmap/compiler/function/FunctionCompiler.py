@@ -131,8 +131,21 @@ class FunctionCompiler(BaseCompiler):
         * HTTP/HTTPS:
         * 
         """
-        header_params = None
-        # Extract all data from graph
+        # Extract parameters from graph
+        agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9)"
+        response_types_allowed = ','.join(['text/html', 'application/xhtml+xml'])
+        response_language_allowed = 'en-US'
+        cache_max_age = "cache-max-age=0"
+
+        # add nested elements as required
+        param_dict = {
+            'header': {
+                'User-Agent': agent,
+                'Accept': response_types_allowed,
+                'Accept-Language': response_language_allowed,
+                'Cache-Control': cache_max_age
+            }
+        }
         # Instantiate the node
         header = self.header(parent=parent)
         # Conditionally append authenticator
@@ -182,6 +195,7 @@ class FunctionCompiler(BaseCompiler):
     def header(self, 
         parent: CompilerNode,
         template:str="functions/aws/header.jinja",
+        **kwargs
     ) -> HeaderNode.HeaderNode:
         """
         Compiles the HTTP header code
@@ -195,7 +209,8 @@ class FunctionCompiler(BaseCompiler):
             _template=template,
             _env=self.env,
             _parent=None,
-            _children=[]
+            _children=[],
+            **kwargs
             )
         self._append_to_parent(parent, header)
         return header
@@ -228,7 +243,7 @@ class FunctionCompiler(BaseCompiler):
     #TODO
     def request(self, 
         parent: CompilerNode, 
-        template: str="functions/aws/",
+        template: str="functions/aws/request_handler.jinja",
         ) -> HandlerNode.HandlerNode:
         """
         Create the compiled handler Node
@@ -238,7 +253,7 @@ class FunctionCompiler(BaseCompiler):
                 _env=self.env, 
                 _parent=None, 
                 _children=[], 
-                code='Handler Code\n')
+                _code='Handler Code\n')
         self._append_to_parent(parent, handler)
         return handler
     

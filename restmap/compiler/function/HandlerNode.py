@@ -26,5 +26,5 @@ class HandlerNode(HandlerNodeDefaults, CompilerNode, HandlerNodeBase):
         # template = self._env.get_template(self._template)
         # Compile template wth parameters
         # param_dict = {k: self.__dict__[k] for k in self.__dict__.keys() if not k.startswith('_')} 
-        # return template.render(**param_dict)
-        return "<<HANDLER CODE>>"
+        # return template.render(**param_dict
+        return self._render_template()

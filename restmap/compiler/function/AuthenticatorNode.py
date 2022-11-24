@@ -16,5 +16,5 @@ class AuthenticatorNode(CompilerNode):
         """
         Compiles the authentication code 
         """
-        return "<<<Authenticator Code>>>"
+        return self._render_template()
 
