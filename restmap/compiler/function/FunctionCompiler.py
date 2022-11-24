@@ -59,7 +59,7 @@ class FunctionRequirement:
     imports: List[str]
 
 @dataclass
-class DeployableFunction:
+class FunctionDeployment:
     """
     The compilation output that can be send to the 
     BackendProvider for function deployment
@@ -70,6 +70,9 @@ class DeployableFunction:
     runtime: str 
     requirements: List[FunctionRequirement] 
     params: DeploymentParams
+    # Elements populated after deployment 
+    uid : str = ''
+    is_deployed: bool = False
 
 class FunctionCompiler(BaseCompiler):
     """
@@ -83,7 +86,7 @@ class FunctionCompiler(BaseCompiler):
     def __init__(self, compilation_dir: str='./ingestless/restmap/src', language:str="Python@3.9") -> None:
         super().__init__(compilation_dir)
 
-    def compile(self, head: CompilerNode, function: ResolutionGraph) -> DeployableFunction:
+    def compile(self, head: CompilerNode, function: ResolutionGraph) -> FunctionDeployment:
         """
         Assumes a loaded resolution graph that was transformed into the compilation graph
 
@@ -113,7 +116,7 @@ class FunctionCompiler(BaseCompiler):
         requirements = self._compile_requirements(head)
         deployment_params = self._compile_params()
 
-        return DeployableFunction(
+        return FunctionDeployment(
             code=code,
             runtime="Python@3.9",
             requirements= requirements,
