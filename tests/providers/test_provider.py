@@ -4,9 +4,9 @@ import pytest
 from typer.testing import CliRunner
 
 from manager.database import DatabaseHandler
-from manager.enums import StatusCode, Provider
+from enums import StatusCode, Provider
 from manager.manager import Manager
-from manager.provider.AWSProvider import AWSProvider 
+from manager.provider.AWS.AWSProvider import AWSProvider 
 
 @pytest.fixture
 def local_manager(local_db):

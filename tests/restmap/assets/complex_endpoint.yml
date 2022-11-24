@@ -1,0 +1,65 @@
+version: '2022-10-03'
+kind: Endpoint
+metadata:
+    name: banking_data_api
+config:
+    endpoints:
+        - baseurl:
+            kind: baseurl
+            url: https://management.azure.com/
+        - reservationlist:
+            kind: relativeurl
+            base: baseurl
+            relative: /providers/Microsoft.Capicity/reservation/{reservationOrderId}
+            params:
+                - reservationOrderId:
+                    param: reservationOrderId
+        - scope:
+            kind: relativeurl
+            base: baseurl
+            relative: /scope/{userId}
+            params:
+                 - userId:
+                    param: userId
+        - userIdEndpoint:
+            kind: relativeurl
+            base: baseurl
+            relative: /users/
+    params:
+        reservationOrderId:
+            name: reservationOrderId
+            type: String
+            resolver: DBReservationLoader
+        userId:
+            name: userId
+            type: Int
+            resolver: UserIdResolver
+            descr: UserId used to access attributes 
+        other:
+            name: other
+            type: String
+            resolver: DBOtherResolver
+    resolvers:
+        UserIdResolver:
+            kind: EndpointResolver
+            endpoint: userIdEndpoint
+            authentication: NameAndKey
+        DBReservationLoader:
+            kind: DatabaseResolver
+            connectionstring: "Some string that should be put into a secret"
+            authentication: NameAndKey
+            table:
+                name: Configuration
+                col: ['Id']
+        DBOtherResolver:
+            kind: DatabaseResolver
+            connectionstring: "something"
+            authentication: NameAndKey
+            table:
+                name: OtherTable
+                col: ['name'] 
+
+    
+
+
+    

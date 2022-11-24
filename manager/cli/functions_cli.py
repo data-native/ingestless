@@ -5,22 +5,26 @@ Functions on the chosen backend can be CRUDed and associated
 with orchestration elements, such as triggers and schedules
 also managed in the system.
 """
-import json
 import logging
 import typer
 import pickle
 from cron_converter import Cron
+from typing import List, Dict
 from tabulate import tabulate
 
-from manager.enums import StatusCode
+from enums import StatusCode
 from manager.manager import Manager
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
-from typing import List, Dict
+from manager.cli import utils
 
+logger = logging.getLogger('root')
 
 manager = Manager()
 
 function_app = typer.Typer()
+
+# HELPER FUNCTIONS_____________
+#TODO: Extract to utils
 
 # Define the app interface
 @function_app.command("register")
@@ -46,24 +50,28 @@ def function_create(
     # TODO: Displey the functions not yet registered in a numbered list
     functions = display_functions(attributes=attributes)
     # TODO: Display a prompt allowing the user to enter the number of the function to register
-    selected_ids = typer.prompt("Select one or more functions to register.", type=int)
-    selection = functions[selected_ids]
-    # selection = [functions[id] for id in selected_ids]
-    # TODO: Get the function details for the selected function
-    typer.secho(selection)
+    ids = typer.prompt("Select one or more functions to register.", type=str)
+        
+    ids = utils.get_argument_list(ids, type=int)
+
     # TODO: Write the new function entry into the backend table
-    status = manager.register_function(manager.models.FUNCTION(
-        name=selection['FunctionName'],
-        attributes = selection,
-        schedule = None
-    ))
-    if status != StatusCode.SUCCESS:
-        typer.secho("Error writing element", fg='Red')
-    # TODO: Display an updated list of available/unregistered functions for further selection
+    if typer.confirm(f"Register functions {ids}"):
+        for id in ids:
+            selection = functions[id]
+            typer.secho(selection)
+            status = manager.register_function(manager.models.FUNCTION(
+                name=selection['FunctionName'],
+                resourceId=selection['FunctionArn'],
+                attributes = selection,
+                schedule = None,
+                status = None,
+            ))
+            if status != StatusCode.SUCCESS:
+                typer.secho("Error writing element", fg='Red')
 
     # typer.secho(f"Putting function {arn} under orchestration")
     
-@function_app.command("list")
+@function_app.command("list-available")
 def list_all_functions(
     stack_name: str = typer.Option(
         'test',
@@ -82,7 +90,7 @@ def list_all_functions(
     """Retrieve the list of all lambdas for the given stack"""
     display_functions(attributes=attributes)
 
-@function_app.command("list-registered")
+@function_app.command("list")
 def list_all_registered(
     app: str = typer.Option(
         '',
@@ -98,7 +106,23 @@ def list_all_registered(
     )):
     """Retrieve the list of registered functions in the orchestrator"""
     display_registered_functions()
-    
+
+@function_app.command("remove") 
+def unregister_function(
+    name: str = typer.Option(
+        '',
+        "--name",
+        "-n",
+        help="Name of the function to remove"
+    )):
+    """Remove a function from the registry"""
+    functions = display_registered_functions()
+    select_idx = typer.prompt("Which function(s) to remove:", type=str)
+    select_idx = utils.get_argument_list(select_idx, type=int)
+    for idx in select_idx:
+        function = functions[idx]
+        manager.unregister_function(function.name)
+
 @function_app.command("schedule")
 def associate_schedule_to_function(
     attributes: List[str] = typer.Option(
@@ -122,26 +146,35 @@ def associate_schedule_to_function(
     selection_options = {
         'intro': 'Select applications to schedule',
         'prompt': 'Select functions as list',
-        'choices': {f.name: {}  for f in functions },
-        'type': int
+        'choices': {f.name: {
+            'attributes': [f.name, f.status, f.schedule, f.schedule],
+        }  for f in functions},
+        'headers': ['idx', 'Function Name', 'Status', 'Schedule', 'CRON'],
+        'type': str
     }
     selected_function_idx = display_selection(selection_options)
+    selected_function_idx = utils.get_argument_list(selected_function_idx, type=int)
+
+    typer.confirm(f"So you want to schedule functions: {selected_function_idx}")
     # Get the selected funtions
-    selected_function = functions[selected_function_idx]
-    logging.info("Selected functions", selected_function)
     # Prompt selection of 1) CRON direct to create new schedule 2) Select existing
     schedule_options = {
         'intro': "Select your schedule",
         'prompt': "",
         'choices': {
             'existing schedules': {},
-            'ad-hoc CRON': {}
+            'ad-hoc CRON': {},
+            'unschedule': {},
+            'flipStatus': {},
         },
+        'headers': ['idx', 'Option'],
         'type': int
     }
-    # Select a schedule to apply
-    schedule = None 
-    while not schedule: 
+
+    selected = None 
+    method = None
+    schedule = None
+    while not selected: 
         method = display_selection(schedule_options)
         if method == 0:
             # Ensure schedules are available to select from
@@ -153,6 +186,7 @@ def associate_schedule_to_function(
             # Make a selection which one to apply
             schedule_idx = typer.prompt("Select a schedule to apply: ", type=int)
             schedule = schedules[schedule_idx]
+            selected = True
         elif method == 1 : 
             # Create a Schedule object with new cron
             registration_status = None
@@ -163,16 +197,41 @@ def associate_schedule_to_function(
                 typer.secho("Create new schedule", fg='green')
                 name = typer.prompt(">> Name: ")
                 cron = Cron(typer.prompt(">> CRON schedule [mhdwy]: ", type=str))
-                logging.debug("Created cron dumps to binary ")
-                schedule = ScheduleModel(name, cron=cron, associated=[selected_function])
+                schedule = ScheduleModel(name, cron=cron, associated=[])
                 registration_status = manager.register_schedule(schedule)
-        
-    # Associate schedule with all functions that have been selected
-    manager.schedule_function(schedule, selected_function.name)
+            selected = True
+        elif method == 2 or method == 3:
+            # TODO: Find a way to include method 2/3 into scheduling operation
+            selected = True
 
-    # for function in selected_functions:
-        # manager.schedule_function(schedule, function)
+    for idx in selected_function_idx:
+        selected_function = functions[idx]
+        logger.info("Selected functions", selected_function)
+        if method == 0 or method == 1:
+            manager.schedule_function(schedule.name, function_hk=selected_function.name)
+        elif method == 2:
+            # Unschedule a function
+            manager.unschedule_function(selected_function.name)
+        elif method == 3:
+            # Flip schedules
+            manager.toggle_event_status(selected_function.name)
+        typer.Exit(0)
 
+@function_app.command("describe") 
+def describe_function(
+    name: str = typer.Option(
+        '',
+        "--name",
+        "-n",
+        help="Name of the function to describe"
+    )):
+    """
+    Describes the details for a chosen function
+    """
+    import json
+    function = manager.describe_function(name)
+    typer.echo(json.dumps(function, indent=4))
+    
 
 #  HELPERS_____________
 def display_schedules(schedules: List[ScheduleModel]) -> StatusCode:
@@ -211,7 +270,11 @@ def display_selection(options: Dict):
     """
     new_line = '\n'
     typer.secho(f"{new_line}{options['intro']}{new_line}", fg="blue")
-    typer.echo(tabulate([[option] for option in options['choices']],headers=['idx', 'Function Name'], showindex='always'))
+    if any(['attributes' in option for option in options['choices'].values()]):
+        typer.echo(tabulate([v['attributes']  for k,v in options['choices'].items()],headers=options['headers'], showindex='always'))
+    else:
+        typer.echo(tabulate([[choice] for choice in options['choices']],headers=options['headers'], showindex='always'))
+
     # for idx, (option, attrs) in options['choices'].items():
         # typer.secho(f'{idx}:: {option}')
     selection = typer.prompt(f"{new_line}>> {options['prompt']}:  ", type=options.get('type', str))
@@ -259,22 +322,31 @@ def display_registered_functions(app: str='', attributes: List[str]=[]):
             # typer.Exit(0)
             # return
     # TODO: Display results as table
-    headers = ["#", "App","Name","FunctionHandler", "Runtime", "[mhdWmY]"]
+    headers = ["#", "App","Name","FunctionHandler", "Runtime", "Schedule","[mhdWmY]", "Status", "ResourceId"]
     result_table = []
     
     scope = "" if app == '' else f"for {app}"
     title = f"{new_line}Registered functions{new_line}-------------------{new_line}Currently registered: {len(registered_functions)} Functions {scope}"
     typer.secho(title, fg='blue')
-    # Display each result in newline with index for selection
+    # Conditionally manage non existance of schedules on functions 
+    cron = '/'
+    schedule_name = '/'
     for function in registered_functions:
-        cron = ''
+        # TODO: Get the details for the associated schedule
         if function.schedule:
-            schedule = pickle.loads(function.schedule)
-            if schedule.cron and isinstance(schedule.cron, bytes):
-                cron_converter = pickle.loads(schedule.cron)
-                cron = cron_converter.to_string()
-        else:
-            cron = "-"         
-        result_table.append([function.app, function.name, function.attributes.get('Handler', 'Not set'), function.attributes.get('Runtime', 'Not Set'), cron])
+            #TODO: Extract status from schedule
+            schedule_meta = manager.describe_schedule(function.schedule.name)
+            cron = function.schedule.cron.to_string()
+            schedule_name = function.schedule.name
+        result_table.append([
+            function.app, 
+            function.name, 
+            function.attributes.get('Handler', 'Not set'), 
+            function.attributes.get('Runtime', 'Not Set'), 
+            schedule_name, 
+            cron, 
+            function.status,
+            function.resourceId
+        ])
     typer.echo(tabulate(result_table, headers=headers, showindex='always'))
     return registered_functions
