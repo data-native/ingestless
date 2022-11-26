@@ -3,6 +3,7 @@
 """
 import pytest
 from restmap.manager.Manager import Manager
+from restmap.orchestrator.BaseOrchestrator import IteratorNode
 
 
 @pytest.fixture
@@ -10,7 +11,7 @@ def manager():
     return Manager('AWS', 'TestStack')
 
 
-class EventGridOrchestrator:
+class TestEventGridOrchestrator:
     """
     The event grid orchestrator implements an AWS native orchestration
     geared towards high scalability with minimal cost footprint through 
@@ -73,7 +74,18 @@ class EventGridOrchestrator:
         assert manager._orchestrator.head().next() == function2, "function being triggerd must be a child to the triggering function"
         #TODO Define how the trigger conditions are represented in the orchestrator state, and in the backend and test for it
 
-    def can_track_dependencies(self):
+    def test_can_iterate_over_param(self, manager: Manager):
+        function = None
+        function2 = None
+        func_obj = manager._orchestrator.register(function)
+        iterator_node = func_obj.iterates_over('param1')
+        assert isinstance(manager._orchestrator.head(), IteratorNode)
+        assert iterator_node.function == function, "The iterator node must relate the executable function within its state"
+        assert False, "Iterator must list the parameters to iterate over"
+        assert False, "Iterator must contain the iteration type per parameter"
+
+
+    def can_track_dependencies(self, orchestrator):
         """Can create a dependency graph in which executable objects can be scheduled in their interaction"""
         function = None # Get an executable object to schedule from the compiler
         function1 = None # Get an executable object to schedule from the compiler
@@ -81,20 +93,21 @@ class EventGridOrchestrator:
         function3 = None # Get an executable object to schedule from the compiler
         
         # All methods that register a function without a further upstream dependency return a execution_graph object that exposes the API to the orchestrator component
-        func_obj = orchestrator.schedule(function, schedule)
+        # func_obj = orchestrator.schedule(function, schedule)
         func_obj = orchestrator.register(function)
         # Describes a parameter resolution dependency function gets resolved outputs from (function1, function2)
-        orchestrator.schedule(function, schedule).uses_resolved_param('parm1', function1).uses_resolved_param('param2', function2) # Both param1, param2 are linked to schedule only, no lineage amongst themselves
+        # orchestrator.register(function).uses_resolved_param('parm1', function1).uses_resolved_param('param2', function2) # Both param1, param2 are linked to schedule only, no lineage amongst themselves
 
         # Methods on the function object returned from registering a function/or scheduling it provide an interface to chain dependencies
         # func_obj.resolves('paramname') # Indicate a function resolves a parameter (High level abstraction to coordinate dependencies)
         func_obj.depends_on('functionname') # Indicate a dependency lineage 
         func_obj.triggers('functionname', on=['Success', 'Skipped']) # The function triggers the other function on 'ExitStatus ('Success' and 'Skipped')
-        
+        func_obj.iterates_over('param_in_function')
         # But you can also access all functions from the orchestrator
 
 
     # Executive capacities____________________
     def test_can_schedule_a_function(self, manager: Manager):
         """Schedule a function with the """
+        pass
 

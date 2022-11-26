@@ -73,6 +73,8 @@ class Manager:
         self._state.state = resolution_graph
         # Compile the deployable assets
         self._compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
+        # 
+        self._orchestrator.orchestrate(deployables=self._compiled_deployables, dependencies=resolution_graph)
         return StatusCode.SUCCESS
 
     def deploy(self):
