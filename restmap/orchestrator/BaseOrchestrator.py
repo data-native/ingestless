@@ -4,6 +4,7 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Union
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
+from restmap.resolver.ResolutionGraph import ResolutionGraph
 
 
 @dataclass
@@ -13,8 +14,7 @@ class OrchestrationNode:
     scheduled in an execution runtime 
     """
     name: str
-    parent: 'OrchestrationNode' = None
-    children: List['OrchestrationNode'] = field(default_factory=list)
+    construct: FunctionDeployment
 
 @dataclass
 class IteratorNodeBase:
@@ -34,10 +34,21 @@ class IteratorNode(IteratorNodeDefaults, OrchestrationNode, IteratorNodeBase):
     * 
     """
     parameter: dict
+
+@dataclass
+class EdgeParams:
+    """
+    @triggers: Resolution of base triggers target node
+    @on: List of outcome types to execute defined trigger for
+    """
+    triggers : bool
+    on: List[str]
+
+
 @dataclass
 class Edge:
     """Stores attributes for the node"""
-    params: dict = field(default_factory=dict)
+    params: EdgeParams 
 
     def set_params(self, params: dict):
         # Ensure only the defined parameters can be set
@@ -143,14 +154,52 @@ class BaseOrchestrator:
     
     def __init__(self) -> None:
         self._functions = {str: FunctionDeployment}
-        self.graph = OrchestrationGraph()
+        self.graph = OrchestrationGraph(is_directed=True)
+    
+    def orchestrate(self, deployables: List[FunctionDeployment], resolution_graph: ResolutionGraph) -> OrchestrationGraph:
+        """
+        Resolves the dependencies between the deployables and 
+        computes an execution graph that can be executed by any 
+        Executor instance against the chosen backend.
+        """
+        #TODO Parametrize the dependency relations amongst the functions
+        from restmap.resolver.nodes. EndpointNode import RelativeURLNode
+        # TODO Place all executable functions on the graph
+        orch_nodes = [OrchestrationNode(
+            construct=deployable, 
+            name=deployable.uid,
+            ) for deployable in deployables]
+        self.graph.insert(orch_nodes)
+        # TODO Create edges between nodes if they are dependent
+        # TODO Find a way to generalize this logic to handle various template types
+        for name, resolver in resolution_graph._resolvers.items():
+           # Have to handle each nodes resolution indipendently based on its inherent logic. TODO Find a way to generalize this
+            if resolver.kind == "EndpointResolver":
+               # Set this to ('depends_on')
+               self.graph.add_edge(resolver.endpoint.name, name)
+        
+        # Manages nested dependencies amongst endpoints
+        for name, endpoint in resolution_graph._endpoints.items():
+            if not isinstance(endpoint, RelativeURLNode):
+                continue
+            self.graph.add_edge(endpoint.base.name, name)
+            # Sets a dependency on all resolvers resolving the parameters used in the endpoint
+            for param in endpoint.params:
+                # TODO Potentially add parametrization on the edge to enable iteration over parameter space
+                self.graph.add_edge(param.resolver.name, name)
+
+        return self.graph
 
     def register(self, function: FunctionDeployment):
         """
         Register a function with the orchestrator 
         """
         self._functions[function.uid] = function
-
+        node =  OrchestrationNode(
+                name=function.uid,
+                construct = function
+                )
+        self.graph.insert(node)
 
     def schedule(self, function: str):
         """
@@ -164,8 +213,18 @@ class BaseOrchestrator:
         raise NotImplementedError
 
 
-    def schedule(self, function):
-        raise NotImplementedError
+    def add_trigger(self, function: str, on:Union[str, List[str]], triggered: str):
+        """
+        Configures a trigger on event between two functions
 
-    def schedule(self, function):
-        raise NotImplementedError
+        @function: the function acting as the trigger
+        @on: The type(s) of events to schedule the trigger on
+        @triggered: The function to be triggered
+        """
+        if isinstance(on, str):
+            on = [on]
+        # TODO Set the type of trigger on the edge
+        self.graph.add_edge(function, triggered, EdgeParams(
+            triggers=True,
+            on=on
+            ))

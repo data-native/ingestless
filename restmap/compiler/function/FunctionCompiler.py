@@ -120,7 +120,8 @@ class FunctionCompiler(BaseCompiler):
             code=code,
             runtime="Python@3.9",
             requirements= requirements,
-            params = deployment_params
+            params = deployment_params,
+            uid=function.name
         )
 
     def _compile_header(self, parent: CompilerNode, graph: ResolutionGraph) -> str:

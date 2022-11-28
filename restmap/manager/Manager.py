@@ -28,6 +28,7 @@ from restmap.resolver.Resolver import Resolver
 from restmap.compiler.Compiler import Compiler
 from restmap.executor.AWS.AWSProvider import AWSInfraProvider
 from restmap.executor.BaseProvider import BaseBackendProvider
+from restmap.orchestrator.AWSOrchestrator import EventGridOrchestrator
 
 class Manager:
     """
@@ -35,12 +36,14 @@ class Manager:
     """
 
     def __init__(self, backend: str, name: str) -> None:
+
         self._parser = TemplateParser()
+        self._state = State()
         self._resolver = Resolver()
         #TODO Extend to handle multiple compilation processes
         self._compiler= Compiler()
-        self._state = State()
         self._provider = self._init_backend_provider(backend, name)
+        self._orchestrator = EventGridOrchestrator(provider=self._provider)
         self._compiled_deployables = []
     
     def _init_backend_provider(self, backend: str, name: str) -> BaseBackendProvider:
@@ -73,7 +76,7 @@ class Manager:
         self._state.state = resolution_graph
         # Compile the deployable assets
         self._compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
-        # 
+        # Computes the dependencies during execution
         self._orchestrator.orchestrate(deployables=self._compiled_deployables, dependencies=resolution_graph)
         return StatusCode.SUCCESS
 

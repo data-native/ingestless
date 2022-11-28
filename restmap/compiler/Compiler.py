@@ -75,10 +75,13 @@ class Compiler(BaseCompiler):
       """
       compiled_function_requests = [] 
       # Endpoints contain one or multiple endpoints
-      for endpoint in graph._endpoints:
+      for endpoint in graph._endpoints.values():
         head = self._spawn_head()
         # Want to retain the dependency graph
         compiled_function_requests.append(self._function_compiler.compile(head, endpoint)) 
+      for resolver in graph._resolvers.values():
+        head = self._spawn_head()
+        compiled_function_requests.append(self._function_compiler.compile(head, resolver))
 
       return compiled_function_requests
       

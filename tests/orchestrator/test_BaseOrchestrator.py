@@ -4,7 +4,16 @@ that the provider specific Orchestration implementations
 build upon. 
 """
 import pytest
+from pathlib import Path
+from restmap.manager.Manager import Manager
+from restmap.compiler.function.FunctionCompiler import FunctionDeployment, DeploymentParams
 from restmap.orchestrator.BaseOrchestrator import BaseOrchestrator, OrchestrationGraph, OrchestrationNode
+
+@pytest.fixture
+def function():
+    return  FunctionDeployment(code='', runtime='python@3.10', params=DeploymentParams(
+        1, 1, 300, [], {}, [], True, True, 100
+        ), requirements=[]) 
 
 @pytest.fixture
 def orchestrator():
@@ -16,7 +25,16 @@ def graph():
 
 @pytest.fixture
 def node():
-    return OrchestrationNode('basenode', None, [] )
+    return OrchestrationNode('basenode', None)
+
+@pytest.fixture
+def manager():
+    return Manager(name="TestStack", backend='AWS')
+
+@pytest.fixture()
+def template_path():
+    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+
 class TestOrchestrator:
     """
     This tests the graph functionality underlying the orchestration 
@@ -46,7 +64,7 @@ class TestOrchestrationGraph:
         graph.insert(node)
         assert len(graph.nodes) == 1
         assert len(graph.adjs) == 1
-        node2 = OrchestrationNode("secondnode")
+        node2 = OrchestrationNode(None, "secondnode")
         graph.insert(node2)
         assert len(graph.nodes) == 2, "Two individual nodes need to be created in the graph"
         assert len(graph.adjs) == 2, "Two entries need to be created in the adjecency list"
@@ -65,7 +83,7 @@ class TestOrchestrationGraph:
     
     def test_can_add_edge(self, node: OrchestrationNode, graph: OrchestrationGraph):
         graph.insert(node)
-        node2 = OrchestrationNode("secondnode")
+        node2 = OrchestrationNode(None, "secondnode")
         graph.insert(node2)
         graph.add_edge(node.name, node2.name)
         assert len(graph.adjs[node.name]) == 1, "An adjacency entry must be added for node"
@@ -75,14 +93,14 @@ class TestOrchestrationGraph:
             assert len(graph.adjs[node2.name]) == 1, "In a undirected graph but relations are added"
 
     def test_can_remove_edge(self, node: OrchestrationNode, graph: OrchestrationGraph):
-        node2 = OrchestrationNode('second')
+        node2 = OrchestrationNode(None, "secondnode")
         graph.insert([node, node2])
         graph.add_edge(node.name, node2.name)
         graph.remove_edge(node.name, node2.name)
 
 
     def test_can_update_edge(self, node: OrchestrationNode, graph: OrchestrationGraph):
-        node2 = OrchestrationNode('second')
+        node2 = OrchestrationNode(None, "secondnode")
         graph.insert([node, node2])
         graph.add_edge(node.name, node2.name)
         update_dict = {
@@ -94,3 +112,66 @@ class TestOrchestrationGraph:
                 'PreviousState': 'unset'}
         graph.update_edge(node.name, node2.name, param_addition_dict)
         assert graph.edges[(node.name, node2.name)] == update_dict | param_addition_dict, "Updates to an existing parametrization contain the union of the dicts. Whereby the new updates overwrite existing params"
+    
+
+
+class TestOrchestrator:
+    """
+    Tests the functionality around data graph creation, parsing, traversal 
+    and integration with the chosen BackendProvider
+    """
+
+    def test_register(self, function: FunctionDeployment, orchestrator: BaseOrchestrator):
+        orchestrator.register(function)
+        assert orchestrator._functions[function.uid] == function, "DeployableConstruct instnace must be stored in the orchestrator by uid reference"
+        assert function.uid in orchestrator.graph.nodes, "Orchestration Node for the DeployableConstruct must be created in the graph"
+
+    # must be able to schedule a function with a cron definition
+    def test_schedule(self, function: FunctionDeployment, orchestrator: BaseOrchestrator):
+        pass
+
+
+    def test_trigger(self, function: FunctionDeployment, orchestrator: BaseOrchestrator):
+        """Sets a dependency between two function"""
+        from copy import deepcopy
+        func2 = deepcopy(function)
+        func2.uid = "SomethingElse"
+        orchestrator.register(function)
+        orchestrator.register(func2)
+        orchestrator.add_trigger(function.uid, 'success', func2.uid)
+        assert orchestrator.graph.edges[(function.uid, func2.uid)]
+
+    def test_orchestrate(self, template_path: Path, manager: Manager):
+        """
+        The orchestration function depends on a complex preparation of objects
+        and should be tested with mock objects instead.
+
+        #TODO Move 
+        """
+        template = manager._parser.load(template_path)
+        resolution_graph = manager._resolver.resolve(template)
+        deployables = manager._compiler.from_resolution_graph(resolution_graph)
+        orchestration_graph = manager._orchestrator.orchestrate(deployables, resolution_graph)
+        assert isinstance(orchestration_graph, OrchestrationGraph)
+
+
+
+
+
+
+class TestOrchestrationNode:
+    """
+    Tests the dependency attribution API on the 
+    OrchestrationNode class that is used within the 
+    framework to specify inter function dependencies.
+    """
+    pass
+        # Create the dependencies
+
+
+        
+
+    # must be able to load data from CompilerGraph
+    # must be able to schedule a function on a given scheduled trigger
+    # must be able to schedule a function success run triggering another function
+

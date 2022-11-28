@@ -50,10 +50,9 @@ class TestCompiler:
     def test_from_resolution_graph_resolver(self, manager: Manager, compiler: Compiler):
         raise NotImplementedError
 
-
 class TestHeaderNode:
     """Test the individual nodes"""
-    def test_compile_code(self, node: CompilerNode):
+    def test_compile_code(self):
         """Ensure compilation with parameters works"""
         raise NotImplementedError
         
@@ -90,8 +89,6 @@ class TestFunctionCompiler:
         assert handler._children[0] == auth
         # Introduce nested elements
 
-    
-
     def test_compile_header(self, compiler: Compiler, func_compiler: FunctionCompiler):
         head = compiler._spawn_head()
         handler = func_compiler.request(
@@ -120,8 +117,6 @@ class TestFunctionCompiler:
         assert isinstance(function_deply.code, str), "Compiled code must be returned as a string"
         assert isinstance(function_deply.params, DeploymentParams), "Deployment Parameters must be compiled to a DeploymentParams instance"
         # Assert a python file is generated in the target src location
-        # Assert 
-    
 class TestCompilerNode:
 
     @pytest.mark.parametrize(
