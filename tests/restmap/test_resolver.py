@@ -10,7 +10,7 @@ from restmap.templateParser.TemplateParser import TemplateParser
 
 @pytest.fixture
 def manager():
-    return Manager(backend='AWS', name='TestStack')
+    return Manager(executor='AWS', name='TestStack')
 
 @pytest.fixture
 def template_path():
@@ -40,6 +40,7 @@ class TestNodeResolution:
         manager: Manager, 
         template:TemplateSchema, 
         ):
+        # TODO Must resolve EndpointResolvers to the Endpoint they are using (Get rid of the intermediary abstraction)
         # TODO Implement resolution of resolver without dependency to test it indipendently
         graph: ResolutionGraph = manager._resolver.resolve(template)
         resolver = list(template.config.resolvers.keys())[0]

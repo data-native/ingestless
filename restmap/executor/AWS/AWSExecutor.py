@@ -9,12 +9,13 @@ import aws_cdk as cdk
 from aws_cdk import App
 from .bucket import BucketProvider
 from .function import FunctionProvider
+from restmap.orchestrator.BaseOrchestrator import OrchestrationGraph
 
 class Stack(cdk.Stack):
     def __init__(self, scope: cdk.App, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
-class AWSInfraProvider():
+class AWSExecutor():
     """
     Implements the configuration and deployment logic
     against AWS using the AWS CDK. 
@@ -60,15 +61,18 @@ class AWSInfraProvider():
 
     # METHOD API _________________
     # These methods manage the IaC configuration and deployment process
+    def compile(self, graph: OrchestrationGraph ):
+        """Compile the iac template based on an orchestrated deployment graph"""
+        # Just compiles the configured stack, does not own any logic.
+        # Business logic is placed in the orchestrator
+        raise NotImplementedError
+
     def deploy(self):
         """Compile and deploy the stack onto the AWS backend"""
         # 
         self.compile()
         raise NotImplementedError
 
-    def compile(self):
-        """Compile the iac template for deployment"""
-        raise NotImplementedError
          
     def diff(self, update):
         """

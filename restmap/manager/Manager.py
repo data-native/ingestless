@@ -26,30 +26,31 @@ from restmap.manager.State import State
 from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
 from restmap.compiler.Compiler import Compiler
-from restmap.executor.AWS.AWSProvider import AWSInfraProvider
-from restmap.executor.BaseProvider import BaseBackendProvider
+from restmap.executor.AWS.AWSExecutor import AWSExecutor
+from restmap.executor.BaseExecutor import BaseExecutor
 from restmap.orchestrator.AWSOrchestrator import EventGridOrchestrator
 
 class Manager:
     """
-    
+        
     """
 
-    def __init__(self, backend: str, name: str) -> None:
+    def __init__(self, executor: str, name: str) -> None:
 
         self._parser = TemplateParser()
         self._state = State()
         self._resolver = Resolver()
         #TODO Extend to handle multiple compilation processes
         self._compiler= Compiler()
-        self._provider = self._init_backend_provider(backend, name)
-        self._orchestrator = EventGridOrchestrator(provider=self._provider)
-        self._compiled_deployables = []
+        self._executor = self._init_executor(executor, name)
+        self._orchestrator = EventGridOrchestrator(executor=self._executor)
+
+        self._deployables = []
     
-    def _init_backend_provider(self, backend: str, name: str) -> BaseBackendProvider:
+    def _init_executor(self, backend: str, name: str) -> BaseExecutor:
         """Initializes the Provider instance for the chosen backend service"""
         if backend in ['aws', 'AWS']:
-            return AWSInfraProvider(name)
+            return AWSExecutor(name)
         else:
             return f"No BackendProvider implemented for backend: {backend}"
 
@@ -57,16 +58,22 @@ class Manager:
         """
         Validate the configuration files in the local environment
         """
-        # Ensure they can be parsed correctly
-        template_dict = self._parser.load(path)
-        # Ensure the elements can be placed onto the graph
-        execution_graph = self._resolver.resolve(template_dict)
-
-        raise NotImplementedError
+        try:
+            # Ensure they can be parsed correctly
+            template_dict = self._parser.load(path)
+            # Ensure the elements can be placed onto the graph
+            execution_graph = self._resolver.resolve(template_dict)
+        except Exception as e:
+            # TODO Handle specific failure types and return instrumental error based on exception types
+            print(f"The provided template is not valid. Failed with Exception: {e}")
 
     def plan(self, path: Union[str, Path]) -> StatusCode:
         """
-        Registers a components defined in a given storage location
+        Loads, validates and parses the construct definition from the
+        template file at the file location.
+
+        Compiles and stores the validated deployment configuration
+        for the given state in preparation for deployment.
         """
         # Load the template from the file path given
         template = self._parser.load(path)
@@ -75,29 +82,32 @@ class Manager:
         # Store updated version
         self._state.state = resolution_graph
         # Compile the deployable assets
-        self._compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
+        compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
         # Computes the dependencies during execution
-        self._orchestrator.orchestrate(deployables=self._compiled_deployables, dependencies=resolution_graph)
+        self._deployables = self._orchestrator.orchestrate(deployables=compiled_deployables, resolution_graph=resolution_graph)
+        # Create the stack in the IaC Executor
+        self._orchestrator.deploy(self._deployables, dryrun=True)
         return StatusCode.SUCCESS
 
-    def deploy(self):
+    def deploy(self, dryrun:bool = False):
         """
         Deploys the planend (resolved and compiled) elements onto
         the backend provider.
+
+        @dryrun: Execute deployment procedure without actual deployment of infrastructure
         """
         #TODO Extend to handle a list of individual templates to deploy in one step
         # Validate that 
-        if not self._compiled_deployables:
+        if not self._deployables:
             # Try reading from set configuration location on default
             # Check that there is a difference to deploy
             # If not quit => 
             return "There is currently no planned deployment. Use `plan(template_path)` to register your templates" 
 
         else:
-            # Compile code for the function
-            for construct in self._compiled_deployables:
-                self._provider.deploy(construct)
-
+            # Conduct the actual deployment to the selected backend platform
+            self._orchestrator.deploy(self._deployables, dryrun)
+        
     def init(self):
         """
         Initialize the local environment 

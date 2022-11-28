@@ -10,6 +10,10 @@ from restmap.orchestrator.BaseOrchestrator import IteratorNode
 def manager():
     return Manager('AWS', 'TestStack')
 
+@pytest.fixture
+def function():
+    return 
+
 
 class TestEventGridOrchestrator:
     """
@@ -43,7 +47,7 @@ class TestEventGridOrchestrator:
 
     def test_can_access_registered_function(self, manager: Manager):
         function = None
-        manager._orchestrator.schedule(function, None)
+        manager._orchestrator.schedule(function)
         function = manager._orchestrator.get(function.uid)
 
     def test_can_add_dependence(self, manager: Manager):

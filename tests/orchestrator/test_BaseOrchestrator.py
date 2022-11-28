@@ -29,7 +29,7 @@ def node():
 
 @pytest.fixture
 def manager():
-    return Manager(name="TestStack", backend='AWS')
+    return Manager(name="TestStack", executor='AWS')
 
 @pytest.fixture()
 def template_path():
@@ -112,8 +112,6 @@ class TestOrchestrationGraph:
                 'PreviousState': 'unset'}
         graph.update_edge(node.name, node2.name, param_addition_dict)
         assert graph.edges[(node.name, node2.name)] == update_dict | param_addition_dict, "Updates to an existing parametrization contain the union of the dicts. Whereby the new updates overwrite existing params"
-    
-
 
 class TestOrchestrator:
     """
@@ -129,7 +127,6 @@ class TestOrchestrator:
     # must be able to schedule a function with a cron definition
     def test_schedule(self, function: FunctionDeployment, orchestrator: BaseOrchestrator):
         pass
-
 
     def test_trigger(self, function: FunctionDeployment, orchestrator: BaseOrchestrator):
         """Sets a dependency between two function"""
@@ -153,11 +150,8 @@ class TestOrchestrator:
         deployables = manager._compiler.from_resolution_graph(resolution_graph)
         orchestration_graph = manager._orchestrator.orchestrate(deployables, resolution_graph)
         assert isinstance(orchestration_graph, OrchestrationGraph)
-
-
-
-
-
+        assert False, "must set RelativeURLNode dependencies on BaseURL"
+        assert False, "must EndpointResolver dependencies on the Endpoint" 
 
 class TestOrchestrationNode:
     """

@@ -27,7 +27,7 @@ The system uses the abstraction of:
 """
 from abc import ABC, abstractclassmethod, abstractstaticmethod, abstractproperty, abstractmethod
 #TODO: Check if implementation as ABC makes sense here
-class BaseBackendProvider(ABC):
+class BaseExecutor(ABC):
     """
     The generalized integration Interface
     to enable the communication between the

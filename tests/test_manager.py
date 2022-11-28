@@ -11,7 +11,7 @@ from manager.database import DatabaseHandler
 from manager.models import FunctionModel, ScheduleModel, TriggerModel
 from manager.types import ScheduleItem
 from manager.manager import Manager
-from restmap.executor.AWS.AWSProvider import AWSInfraProvider
+from restmap.executor.AWS.AWSProvider import AWSExecutor
 
 
 runner = CliRunner()
@@ -95,7 +95,7 @@ class TestInitialization:
 
     def test_init_backend_provider(local_manager: Manager):
         manager = Manager('AWS')
-        assert isinstance(manager, AWSInfraProvider)
+        assert isinstance(manager, AWSExecutor)
         
 
 # FUNCTIONS_________________

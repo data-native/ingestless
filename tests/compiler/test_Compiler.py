@@ -25,7 +25,7 @@ def graph(template_path, manager: Manager):
 
 @pytest.fixture
 def manager():
-    return Manager(backend='AWS', name="TestStack")
+    return Manager(executor='AWS', name="TestStack")
 
 class TestCompiler:
     """

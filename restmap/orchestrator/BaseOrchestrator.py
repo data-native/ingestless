@@ -1,10 +1,12 @@
 """
 
 """
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Union
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.resolver.ResolutionGraph import ResolutionGraph
+from restmap.executor.BaseExecutor import BaseExecutor
 
 
 @dataclass
@@ -15,7 +17,6 @@ class OrchestrationNode:
     """
     name: str
     construct: FunctionDeployment
-
 @dataclass
 class IteratorNodeBase:
     parameter: dict
@@ -132,7 +133,7 @@ class OrchestrationGraph:
         except KeyError:
             print(f"The edge between {node1} and {node2} does not exist, or the nodes are not registered")
 
-class BaseOrchestrator:
+class BaseOrchestrator(ABC):
     """
     The orchestrator schedules the execution of functions, 
     maintains their dependencies across runs and ensures
@@ -152,17 +153,19 @@ class BaseOrchestrator:
 
     """
     
-    def __init__(self) -> None:
+    def __init__(self, executor: BaseExecutor) -> None:
         self._functions = {str: FunctionDeployment}
         self.graph = OrchestrationGraph(is_directed=True)
-    
+        self.executor = executor
+
+
+    # PUBLIC API_______________
     def orchestrate(self, deployables: List[FunctionDeployment], resolution_graph: ResolutionGraph) -> OrchestrationGraph:
         """
         Resolves the dependencies between the deployables and 
         computes an execution graph that can be executed by any 
         Executor instance against the chosen backend.
         """
-        #TODO Parametrize the dependency relations amongst the functions
         from restmap.resolver.nodes. EndpointNode import RelativeURLNode
         # TODO Place all executable functions on the graph
         orch_nodes = [OrchestrationNode(
@@ -190,6 +193,7 @@ class BaseOrchestrator:
 
         return self.graph
 
+    # Mainly internal methods_____________
     def register(self, function: FunctionDeployment):
         """
         Register a function with the orchestrator 
@@ -228,3 +232,40 @@ class BaseOrchestrator:
             triggers=True,
             on=on
             ))
+
+    def subgraphs(self):
+        """
+        Returns the set of disconnected graphs acting as 
+        individual, unrelated units of deployment.
+        """
+        subgraphs = []
+        # Identify all disconnected subgraphs
+
+        # For each subgraph, export as individual OrchestrationGraph instance
+        yield OrchestrationGraph(
+            adjs=None, 
+            edges=None,
+            nodes=[]
+            )
+    
+    def deploy(self, graph: OrchestrationGraph, dryrun: bool=False):
+        """
+        Deploy the orchestrated graph onto the selected backend.
+
+        @dryrun: Compiles the IaC backend state, but does not deploy the configuration
+        """
+        self._deploy_to_executor(graph)
+
+    @abstractmethod
+    def _deploy_to_executor(self, graph: OrchestrationGraph):
+        """
+        Implements the logic to deploy the common strucure of the 
+        orchestration graph onto the specific executor.
+        The business logic of the implementation in this function
+        and all supporting subfunctions contain the specific approach
+        of the given orchestrator plug-in.
+
+        All functional code used for the actual IaC compilation must be 
+        implemented in the associated Executor
+        """
+        raise NotImplementedError
