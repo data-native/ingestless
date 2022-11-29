@@ -18,5 +18,5 @@ class BaseConstructProvider:
     def _get_active_construct(self):
         return self._selected_construct
 
-    def _set_active_construct(self, construct):
+    def _select_construct(self, construct):
         self._selected_construct = construct

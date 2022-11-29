@@ -34,32 +34,37 @@ class FunctionProvider(BaseConstructProvider):
             function = [function]
         func_objs = []
         for func_conf in function:
-            func_obj = self.function(function=func_conf)
+            func_obj = self.compile(function=func_conf)
             func_objs.append(func_obj)
+            self._constructs[func_conf.uid] = func_obj
         return func_objs
         # Register dependencies amongst the functions
 
-    def function(self, function: FunctionDeployment) -> 'FunctionProvider':
+    def compile(self, function: FunctionDeployment) -> 'FunctionProvider':
         """
         Creates a AWS Lambda based on the FunctionDeployment configuration
         """
-        
         # Compile the passed code to a folder location to link the required artifacts into the docker compilation process in the CDK
         # TODO Store code file to target
         # TODO Create poetry.toml from requirements
-        # TODO 
-        lambda_.Runtime
-
         func_obj = lambda_.Function(self._stack, 
             id=function.uid, 
-            code=lambda_.Code.from_asset(function.code), 
+            code=lambda_.Code.from_asset(str(function.code_location.parent.absolute())),
             handler=function.handler,
             runtime=lambda_.Runtime(function.runtime),
             )
-        #TODO Change up the Runtime
-
-        self._set_active_construct(func_obj)
-
+        self._select_construct(func_obj)
+        return self
+    
+    def get_function(self, function: str) -> 'FunctionProvider':
+        """
+        """
+        try:
+            func_construct = self._constructs[function]
+            self._select_construct(func_construct)
+        except Exception as e:
+            # TODO explore the key error created here and reply with informative error
+            raise e
         return self
     
     def withRole(self, role:str) -> 'FunctionProvider':
@@ -67,6 +72,7 @@ class FunctionProvider(BaseConstructProvider):
         Assigns a role to the function
         Works against the active function construct
         """
+        construct: lambda_.Function = self._selected_construct
         return self
 
     def triggers(self, target: lambda_.Function, params: dict):
@@ -87,7 +93,7 @@ class FunctionProvider(BaseConstructProvider):
     def useFunction(self, uid:str):
         raise NotImplementedError
         # Retrieve the function a
-        self._set_active_construct()
+        self._select_construct()
         return self
     
     

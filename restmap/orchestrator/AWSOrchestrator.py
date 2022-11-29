@@ -45,7 +45,7 @@ class EventGridOrchestrator(BaseOrchestrator):
             # Link up the functions based on the edges
             for edge, params in graph.edges.items():
                 start, target = edge
-                start_function = self.executor.Function.get_function(start)
-                start_function.triggers(target, params)
+                start = self.executor.Function.get_function(start)
+                start.triggers(target, params)
             # 
             

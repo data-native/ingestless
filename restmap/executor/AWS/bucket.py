@@ -41,7 +41,7 @@ class BucketProvider(BaseConstructProvider):
             self._active_construct = self._constructs[uid] 
         else:
             bucket = s3.Bucket.from_bucket_name(self._stack,id=uid, bucket_name=uid)
-            self._set_active_construct(bucket)
+            self._select_construct(bucket)
 
         return self
     
