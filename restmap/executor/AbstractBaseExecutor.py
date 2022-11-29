@@ -27,10 +27,11 @@ The system uses the abstraction of:
 """
 from abc import ABC, abstractclassmethod, abstractstaticmethod, abstractproperty, abstractmethod
 from restmap.orchestrator.OrchestrationGraph import OrchestrationGraph
-from restmap.executor.AWS.provider.function import FunctionProvider
-from restmap.executor.AWS.provider.bucket import BucketProvider
-from restmap.executor.AWS.provider.queue import QueueProvider
-from restmap.executor.AWS.provider.table import TableProvider
+from restmap.executor.AbstractFunctionProvider import AbstractFunctionProvider
+from restmap.executor.AbstractBucketProvider import AbstractBucketProvider
+from restmap.executor.AbstractQueueProvider import AbstractQueueProvider
+from restmap.executor.AbstractTableProvider import AbstractTableProvider
+from restmap.executor.AbstractTopicProvider import AbstractTopicProvider
 
 #TODO: Check if implementation as ABC makes sense here
 class AbstractBaseExecutor(ABC):
@@ -41,31 +42,31 @@ class AbstractBaseExecutor(ABC):
     """
 
     @abstractmethod
-    def Function(self) -> FunctionProvider:
+    def Function(self) -> AbstractFunctionProvider:
         """
         Create a function in the system
         """
 
     @abstractmethod
-    def Bucket(self) -> BucketProvider:
+    def Bucket(self) -> AbstractBucketProvider:
         """
         Create a BLOB storage bucket in the system
         """
 
     @abstractmethod
-    def Table(self) -> TableProvider:
+    def Table(self) -> AbstractTableProvider:
         """
         Create a storage table
         """
     
     @abstractmethod
-    def Queue(self) -> QueueProvider:
+    def Queue(self) -> AbstractQueueProvider:
         """
         Create a storage queue
         """
 
     @abstractmethod
-    def Topic(self) -> TopicProvider:
+    def Topic(self) -> AbstractTopicProvider:
         """
         Create a notification/messaging topic
         """
