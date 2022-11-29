@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Tuple, Union
+from typing import List, Dict, Tuple, Union
 
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 

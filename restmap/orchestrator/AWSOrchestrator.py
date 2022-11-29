@@ -5,7 +5,7 @@ Services used:
 --------------
 * EventGrid Scheduler
 """
-from restmap.executor.BaseExecutor import BaseExecutor
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 from .BaseOrchestrator import BaseOrchestrator, OrchestrationGraph
 
 
@@ -20,7 +20,7 @@ class EventGridOrchestrator(BaseOrchestrator):
     functions. 
     """
     
-    def __init__(self, executor: BaseExecutor):
+    def __init__(self, executor: AbstractBaseExecutor):
         super().__init__(executor)
 
     # EXECUTOR INTERACTION____________
@@ -45,7 +45,7 @@ class EventGridOrchestrator(BaseOrchestrator):
             # Link up the functions based on the edges
             for edge, params in graph.edges.items():
                 start, target = edge
-                start = self.executor.Function.get_function(start)
+                start = self.executor.Function.use_function(start)
                 start.triggers(target, params)
             # 
             

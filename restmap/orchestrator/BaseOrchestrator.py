@@ -6,7 +6,7 @@ from typing import List, Union
 
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.resolver.ResolutionGraph import ResolutionGraph
-from restmap.executor.AWS.AWSExecutor import AWSExecutor
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 from .OrchestrationGraph import OrchestrationGraph, OrchestrationNode, EdgeParams
 
 
@@ -30,7 +30,7 @@ class BaseOrchestrator(ABC):
 
     """
     
-    def __init__(self, executor: AWSExecutor)-> None:
+    def __init__(self, executor: AbstractBaseExecutor)-> None:
         self._functions = {str: FunctionDeployment}
         self.graph = OrchestrationGraph(is_directed=True)
         self.executor = executor

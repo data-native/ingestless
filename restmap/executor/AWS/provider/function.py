@@ -12,8 +12,10 @@ AWS Lambda implementation
 from typing import List, Union
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
-from .BaseConstructProvider import BaseConstructProvider
+from ..BaseConstructProvider import BaseConstructProvider
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
+
+
 class FunctionProvider(BaseConstructProvider):
     """
     Executes the constructs compiled by the Compile stage
@@ -56,7 +58,7 @@ class FunctionProvider(BaseConstructProvider):
         self._select_construct(func_obj)
         return self
     
-    def get_function(self, function: str) -> 'FunctionProvider':
+    def use_function(self, function: str) -> 'FunctionProvider':
         """
         """
         try:
@@ -88,12 +90,3 @@ class FunctionProvider(BaseConstructProvider):
         current = self._get_active_construct()
         # Trigger the target function through the current function
         target.add_event_source(source=target)
-
-
-    def useFunction(self, uid:str):
-        raise NotImplementedError
-        # Retrieve the function a
-        self._select_construct()
-        return self
-    
-    

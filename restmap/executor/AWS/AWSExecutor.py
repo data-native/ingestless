@@ -7,15 +7,15 @@ Implements using the AWS CDK
 
 import aws_cdk as cdk
 from aws_cdk import App
-from .bucket import BucketProvider
-from .function import FunctionProvider
+from .provider.bucket import BucketProvider
+from .provider.function import FunctionProvider
 from restmap.orchestrator.BaseOrchestrator import OrchestrationGraph
 
 class Stack(cdk.Stack):
     def __init__(self, scope: cdk.App, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
-class AWSExecutor():
+class AWSExecutor:
     """
     Implements the configuration and deployment logic
     against AWS using the AWS CDK. 
@@ -58,6 +58,12 @@ class AWSExecutor():
         """
         return self._functionProvider
 
+    @property
+    def Table(self) -> Any:
+        """
+        Provider for the serverless function interface
+        """
+        return self._functionProvider
 
     # METHOD API _________________
     # These methods manage the IaC configuration and deployment process

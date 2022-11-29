@@ -7,7 +7,7 @@ AWS S3 implementation
 """
 import aws_cdk as cdk
 import aws_cdk.aws_s3 as s3
-from .BaseConstructProvider import BaseConstructProvider
+from ..BaseConstructProvider import BaseConstructProvider
 
 class BucketProvider(BaseConstructProvider):
     """

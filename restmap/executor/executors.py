@@ -2,7 +2,8 @@
 This code registers the actual provider classes with
 the abstract provider interface
 """
-from .BaseExecutor import BaseExecutor
+from .AbstractBaseExecutor import AbstractBaseExecutor
 from .AWS import AWSExecutor
 
-BaseExecutor.register(AWSExecutor)
+# Register all Executors implementing the interface__________
+AbstractBaseExecutor.register(AWSExecutor)

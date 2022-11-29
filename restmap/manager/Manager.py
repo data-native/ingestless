@@ -27,7 +27,7 @@ from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
 from restmap.compiler.Compiler import Compiler
 from restmap.executor.AWS.AWSExecutor import AWSExecutor
-from restmap.executor.BaseExecutor import BaseExecutor
+from restmap.executor.BaseExecutor import AbstractBaseExecutor
 from restmap.orchestrator.AWSOrchestrator import EventGridOrchestrator
 
 class Manager:
@@ -47,7 +47,7 @@ class Manager:
 
         self._deployables = []
     
-    def _init_executor(self, executor: str, name: str) -> BaseExecutor:
+    def _init_executor(self, executor: str, name: str) -> AbstractBaseExecutor:
         """Initializes the Provider instance for the chosen backend service"""
         if executor in ['aws', 'AWS']:
             return AWSExecutor(name)
