@@ -20,8 +20,8 @@ class EventGridOrchestrator(BaseOrchestrator):
     functions. 
     """
     
-    def __init_subclass__(cls) -> None:
-        return super().__init_subclass__()
+    def __init__(self, executor: BaseExecutor):
+        super().__init__(executor)
 
     # EXECUTOR INTERACTION____________
     # Intended to separate the basic orchestration logic in the BaseOrchestrator
@@ -38,10 +38,14 @@ class EventGridOrchestrator(BaseOrchestrator):
         """
         # TODO Generalize the code with enhanced serverless abstraction semantics
 
-        # For all subgraphs
+        # For all subgraphs deploy the units
         for graph in self.subgraphs():
-            graph
-        
-
-
-
+            # Creates a list of function objects to work on 
+            func_objs = self.executor.Function.register([node.construct for node in graph.nodes.values()])
+            # Link up the functions based on the edges
+            for edge, params in graph.edges.items():
+                start, target = edge
+                start_function = self.executor.Function.get_function(start)
+                start_function.triggers(target, params)
+            # 
+            

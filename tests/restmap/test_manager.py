@@ -9,7 +9,7 @@ from restmap.manager.Manager import Manager
 
 @pytest.fixture
 def manager():
-    return Manager('stackname', 'AWS')
+    return Manager('AWS', 'StackName')
 
 @pytest.fixture
 def template_path():

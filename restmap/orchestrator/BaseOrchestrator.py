@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Union
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.resolver.ResolutionGraph import ResolutionGraph
-from restmap.executor.BaseExecutor import BaseExecutor
+from restmap.executor.AWS import AWSExecutor
 
 
 @dataclass
@@ -153,7 +153,7 @@ class BaseOrchestrator(ABC):
 
     """
     
-    def __init__(self, executor: BaseExecutor) -> None:
+    def __init__(self, executor: AWSExecutor)-> None:
         self._functions = {str: FunctionDeployment}
         self.graph = OrchestrationGraph(is_directed=True)
         self.executor = executor
@@ -238,7 +238,6 @@ class BaseOrchestrator(ABC):
         Returns the set of disconnected graphs acting as 
         individual, unrelated units of deployment.
         """
-        subgraphs = []
         nodes_without_incoming_edges = {edge[1] for edge in self.graph.edges}
         independent_nodes = set(self.graph.nodes.keys()).difference(nodes_without_incoming_edges)
 

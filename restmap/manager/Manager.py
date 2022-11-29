@@ -47,12 +47,12 @@ class Manager:
 
         self._deployables = []
     
-    def _init_executor(self, backend: str, name: str) -> BaseExecutor:
+    def _init_executor(self, executor: str, name: str) -> BaseExecutor:
         """Initializes the Provider instance for the chosen backend service"""
-        if backend in ['aws', 'AWS']:
+        if executor in ['aws', 'AWS']:
             return AWSExecutor(name)
         else:
-            return f"No BackendProvider implemented for backend: {backend}"
+            return f"No BackendProvider implemented for backend: {executor}"
 
     def validate(self, path: Union[str, Path]):
         """

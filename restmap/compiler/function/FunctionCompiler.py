@@ -1,10 +1,57 @@
 """
-Compiler
-------------
-* Use a graph to create nested elements as 
+The Compiler generates a set of parametrized deployable construct
+definition instances to be further orchestrated and deployed onto a given target infrastructure.
+
+The compiler contains the definition of the parameters to be set on 
+any type of supported deployable construct such as a serverless function, queue, table, etc.
+
+Compilation sets the construct deployment parameter for a given construct based on the 
+nested structure of components the construct is configured with in the template definition.
+The contextual analysis enables the Compiler to apply optimization both on the level of code
+generation, but also on the service parametrization level. 
+
+## Code compilation
+The received ResolutionGraph contains either flat, or nested construct definitions whereby
+the nested case provides a set of independently parametrized sub components that require a 
+joint compilation to generate the target code. 
+
+As an example, the parsing stage of the response body received from a REST request can contain
+one or multiple required transformations based on the given response format and target
+output format for the function. 
+
+The definition would look something like
+```python
+parser = resolver.bodyParser()
+parser.parse_incoming('JSON')
+parser.return_variable('data')
+parser.return_format('parquet')
+```
+The compilation of the code associated now creates a linear set of transformation
+steps resulting in a `data` variable holding parquet transformed JSON response data.
+
+The compiler handles each step in the nested logic as a compilable Node instance that
+is analyzed both in terms of the parameters set on it, as well as its position in the logic.
+Determining this context, the Compiler can make informed decisions on code optimization.
+
+## Parametrization
+Each supported `serverless construct` provides an abstraction from the platform specific implementation on a given
+public cloud or native stack. The Compiler houses the logic of parametrizing the specified
+`DeployableConstruct` class interfaces that provide this serverless abstraction semantics. 
+
+The Compiler receives the resolved configuration tree and the code compilation output and uses
+this information to infer optimal settings for all involved constructs. The actual generation
+of the serverless assets does not happen here, but after orchestration in the `Orchestrator` component.
+
+## Construct specific Compilers
+The main Compiler class deferrs the compilation logic for a given construct onto
+`Construct Compiler plug-ins` and communicates its requirements through a set of
+request data objecs called `CompilationRequest`
+
 
 """
+# TODO Add Doc on communication between compiler and construct compiler
 from typing import Union, List, Dict, Optional
+from pathlib import Path
 from dataclasses import dataclass
 
 from restmap.resolver.ResolutionGraph import ResolutionGraph
@@ -28,7 +75,6 @@ class FunctionCompilationRequest:
     url_generator: str
     authentication: str
 
-    
 @dataclass
 class DeploymentParams:
     """
@@ -71,7 +117,9 @@ class FunctionDeployment:
     requirements: List[FunctionRequirement] 
     params: DeploymentParams
     # Elements populated after deployment 
+    code_location: Path
     uid : str = ''
+    handler: str = 'handler' # Code compilation defaults to generating a function handler 
     is_deployed: bool = False
 
 class FunctionCompiler(BaseCompiler):
@@ -113,15 +161,20 @@ class FunctionCompiler(BaseCompiler):
         # compilation to code based on the same overall resolved compilation attributes
         # that are passed to them at this point
         # Render code template
+        # TODO Make a switch based on the chosen runtime
+        code_location = self._save_to_file(doc=code, name=function.name)
+
         requirements = self._compile_requirements(head)
         deployment_params = self._compile_params()
 
         return FunctionDeployment(
             code=code,
-            runtime="Python@3.9",
+            handler="handler",
+            runtime="PYTHON_3_9",
             requirements= requirements,
             params = deployment_params,
-            uid=function.name
+            uid=function.name,
+            code_location=code_location
         )
 
     def _compile_header(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
@@ -320,9 +373,12 @@ class FunctionCompiler(BaseCompiler):
 
     def _save_to_file(self, name:str, doc: str):
         """Output the compilation result to file location"""
-        self.output_location.mkdir()
-        path = self.output_location / f"{name.split('.')[0]}.py" 
+        path = self.output_location / f"lambda/{name}"  
+        if not path.is_dir():
+            path.mkdir(parents=True, exist_ok=True)
+        path = path / "handler.py" 
         path.write_text(doc) 
+        return path
 
 
     def _append_to_parent(self, parent: CompilerNode, node: CompilerNode):
