@@ -40,7 +40,7 @@ class EventGridOrchestrator(BaseOrchestrator):
 
         # For all subgraphs
         for graph in self.subgraphs():
-            pass
+            graph
         
 
 

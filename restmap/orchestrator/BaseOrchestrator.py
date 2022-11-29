@@ -239,14 +239,30 @@ class BaseOrchestrator(ABC):
         individual, unrelated units of deployment.
         """
         subgraphs = []
-        # Identify all disconnected subgraphs
+        nodes_without_incoming_edges = {edge[1] for edge in self.graph.edges}
+        independent_nodes = set(self.graph.nodes.keys()).difference(nodes_without_incoming_edges)
 
-        # For each subgraph, export as individual OrchestrationGraph instance
-        yield OrchestrationGraph(
-            adjs=None, 
-            edges=None,
-            nodes=[]
-            )
+        # ubgraph, export as individual OrchestrationGraph instance
+        for node in independent_nodes:
+            # TODO Extend this to follow all edges in the subgraph
+            subgraph_edges = {k:v for k,v in self.graph.edges.items() if k[0] == node} 
+            while True:
+                # Append all edges for the edge targets
+                next_degree_nodes = {k:v for k,v in self.graph.edges.items() for child in subgraph_edges.keys() if k[0] in child[1]}
+                # Recurses over all levels of connection in the graph until it finds no more edges to add
+                if not set(next_degree_nodes.keys()).difference(set(subgraph_edges.keys())):
+                    break
+                subgraph_edges = subgraph_edges | next_degree_nodes
+
+            # Compute the set of nodes to include in the subgraph
+            subgraph_node_keys = {node for tup in subgraph_edges for node in tup}
+            subgraph_nodes = {k:v for k,v in self.graph.nodes.items() if k in subgraph_node_keys}
+            subgraph = OrchestrationGraph(
+                adjs={node: self.graph.adjs[node]}, 
+                edges=subgraph_edges,
+                nodes=subgraph_nodes,
+                )
+            yield subgraph
     
     def deploy(self, graph: OrchestrationGraph, dryrun: bool=False):
         """
