@@ -131,7 +131,12 @@ class FunctionCompiler(BaseCompiler):
     Tree structure allows the nodes to take their context
     into account when creating code fragments.
     """
-    def __init__(self, compilation_dir: str='./ingestless/restmap/src', language:str="Python@3.9") -> None:
+    def __init__(self, 
+        compiler: BaseCompiler, #Actually the parent Compiler. Used to access the other compiler to request resource allocation dynamically
+        compilation_dir: str='./ingestless/restmap/src', 
+        language:str="Python@3.9",
+
+        ) -> None:
         super().__init__(compilation_dir)
 
     def compile(self, head: CompilerNode, function: ResolutionGraph) -> FunctionDeployment:

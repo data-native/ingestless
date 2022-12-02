@@ -8,6 +8,9 @@ Services used:
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 from .BaseOrchestrator import BaseOrchestrator, OrchestrationGraph
 
+# EventGrid related imports
+import aws_cdk.aws_events_targets as targets
+
 
 class EventGridOrchestrator(BaseOrchestrator):
     """
@@ -23,6 +26,9 @@ class EventGridOrchestrator(BaseOrchestrator):
     def __init__(self, executor: AbstractBaseExecutor):
         super().__init__(executor)
 
+    
+    # TODO 
+
     # EXECUTOR INTERACTION____________
     # Intended to separate the basic orchestration logic in the BaseOrchestrator
     # from the changing logic implemented by a specific stack of services in the background
@@ -35,6 +41,10 @@ class EventGridOrchestrator(BaseOrchestrator):
         
         This implementation is specific to the use of the AWSEventGrid
         API. 
+        
+        Functionality:
+        * Each resolution of a endpoint creates an "EndpointResolved" event with parameters detailing the resolver that finished
+        * Each resolution of 
         """
         # TODO Generalize the code with enhanced serverless abstraction semantics
 
@@ -45,11 +55,24 @@ class EventGridOrchestrator(BaseOrchestrator):
             # Link up the functions based on the edges
             for edge, params in graph.edges.items():
                 start, target = edge
-                # TODO Change this to a context managet to make the scope of the context clear
+                
+                # Start can emit an event on success to a preconfigured topic
+                
+                # target is set to be triggered on sns message
+                # Configure start to emit an event on finish
                 with self.executor.Function.useFunction(start) as f:
-                    assert f
-                    f.triggers(target, params)
-                    # TODO Ensure use function sets the context to utilize
+                    # Configuring a sns topic call gets compiled into code through a parametrized template
+                    f.triggers()
+                # Configure target to trigger on received event from start
+                with self.executor.Fucntion.useFunction(target) as f:
 
+                # with self.executor.Function.useFunction(start) as f:
+                    # Writes to 
+                    # f
+
+                    # TODO Ensure use function sets the context to utilize
+    
+    def triggers(self):
+            
 
             

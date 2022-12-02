@@ -17,7 +17,7 @@ import aws_cdk.aws_sns as sns
 from aws_cdk.aws_lambda_event_sources import SnsEventSource
 from ..BaseConstructProvider import BaseConstructProvider
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
-
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 @dataclass
 class Function:
     """
@@ -35,25 +35,6 @@ class Function:
         construct: lambda_.Function = self.provider.selected_construct
         return self
 
-    def triggers(self, target: lambda_.Function, params: dict, synchronous:bool=True) -> 'Function':
-        """
-        Chains the given functions execution to the previous
-        execution of the other function. 
-
-        Can optionally set the list of execution outcome statuses
-        to trigger on. By default only triggers on successful execution.
-        """
-        #TODO Implement synch and asynch trigger mechanism
-        # Ensure that a construct is set
-        assert self.provider.selected_construct
-        current = self.provider.get_active_construct()
-        # Trigger the target function through the current function
-        # Reuse or create a new SQS topic
-        # TODO Access the table provider from here to 
-        topic = sns.Topic(self.provider.stack, 'TestTopic', {
-        })
-        current.add_event_source(SnsEventSource(topic))
-        return self
 
 class FunctionProvider(BaseConstructProvider):
     """
@@ -64,7 +45,7 @@ class FunctionProvider(BaseConstructProvider):
     Compiles into AWS native CloudFormation stacks.
     """
 
-    def __init__(self, stack: cdk.Stack) -> None:
+    def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
 
     def register(self, function: Union[FunctionDeployment, List[FunctionDeployment]]) -> List['FunctionProvider']:
@@ -103,6 +84,38 @@ class FunctionProvider(BaseConstructProvider):
         return FunctionContextManager(self, function)
     
 
+    def triggers(self, target: lambda_.Function, params: dict, synchronous:bool=True) -> 'Function':
+        """
+        Chains the given functions execution to the previous
+        execution of the other function. 
+
+        Can optionally set the list of execution outcome statuses
+        to trigger on. By default only triggers on successful execution.
+        """
+        #TODO Implement synch and asynch trigger mechanism
+        # Ensure that a construct is set
+        assert self.selected_construct
+        current = self.get_active_construct()
+        # Trigger the target function through the current function
+        # Reuse or create a new SQS topic
+        # TODO Access the table provider from here to 
+        # Set the current lambda to publish to the given topic
+
+        # Set the trigger on the target fuction to react to the chosen topic
+        topic = sns.Topic(self.provider.stack, 'TestTopic', {
+        })
+        
+        # Grant publish to the topic
+        topic.grant_publish(target)
+        cdk.CfnOutput(self.stack, 'snsTopicArn',
+                value=topic.topic_arn
+        )
+        # The code changes need to be applied on the function 
+        # self.provider.
+        
+        # This is done natively in AWS CDK
+        target.add_event_source(SnsEventSource(topic))
+        return self
 
 class FunctionContextManager:
     """

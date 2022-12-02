@@ -8,6 +8,7 @@ AWS S3 implementation
 import aws_cdk as cdk
 import aws_cdk.aws_s3 as s3
 from ..BaseConstructProvider import BaseConstructProvider
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 
 class BucketProvider(BaseConstructProvider):
     """
@@ -15,11 +16,14 @@ class BucketProvider(BaseConstructProvider):
     
     Builds resources onto a given stack
 
+    All Providers are linked up amongst each other through their parent `executor`.
+    This class is the only one able to call onto the construct specific providers.
     """
     #TODO: Complete implementation of method API
 
-    def __init__(self, stack: cdk.Stack) -> None:
+    def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
+        self.executor = executor
 
     def bucket(self, name: str='') -> 'BucketProvider':
         """

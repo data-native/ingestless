@@ -15,6 +15,7 @@ import aws_cdk as cdk
 import aws_cdk.aws_sns as sns
 from ..BaseConstructProvider import BaseConstructProvider
 
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 
 class TopicProvider(BaseConstructProvider):
     """
@@ -25,7 +26,7 @@ class TopicProvider(BaseConstructProvider):
     Compiles into AWS native CloudFormation stacks.
     """
 
-    def __init__(self, stack: cdk.Stack) -> None:
+    def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
    
     def register(self, topic) -> List['TopicProvider']:

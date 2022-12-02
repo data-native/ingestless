@@ -26,8 +26,9 @@ class Compiler(BaseCompiler):
     def __init__(self, compilation_dir: str = './ingestless/restmap/src') -> None:
         super().__init__(compilation_dir)
         #TODO Enable the compiler to receive a language compiler to select the type of compilation stack to use
-        self._function_compiler = FunctionCompiler()
-    
+        self._function_compiler = FunctionCompiler(compiler=self)
+        self.queue_compiler = QueueCompiler(compiler=self)
+
     def from_resolution_graph(self, graph: ResolutionGraph) -> List[FunctionDeployment]:
         """
         Traverses the resolution graph to compile the required components
@@ -38,7 +39,8 @@ class Compiler(BaseCompiler):
         steps to handle the conditional code and infrastructure creation based 
         on the ResolutionGraph components.
         """
-        # Switch on selected templates
+        # Conduct reference orchestration before compiling
+
         #TODO Resolver must parse kind:str to Construct Enum when resolving the ResolutionGraph 
         kind_switch: dict[Constructs, BaseCompiler] = {
             Constructs.Endpoint : self._compile_endpoint,

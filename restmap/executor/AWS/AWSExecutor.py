@@ -31,8 +31,8 @@ class AWSExecutor:
     def __init__(self, name:str) -> None:
         self._scope = App()
         self._stack = self._init_stack(self._scope, construct_id=name)
-        self._bucketProvider = BucketProvider(stack=self._stack)
-        self._functionProvider = FunctionProvider(stack=self._stack)
+        self._bucketProvider = BucketProvider(executor=self, stack=self._stack)
+        self._functionProvider = FunctionProvider(executor=self, stack=self._stack)
         #TODO Add additional constructor providers
     
     def _init_stack(self,scope:App, construct_id='') -> cdk.Stack:
