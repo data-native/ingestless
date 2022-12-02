@@ -3,7 +3,7 @@
 """
 import pytest
 from restmap.manager.Manager import Manager
-from restmap.orchestrator.BaseOrchestrator import IteratorNode
+from restmap.orchestrator.OrchestrationGraph import IteratorNode
 
 
 @pytest.fixture

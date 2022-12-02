@@ -5,10 +5,12 @@ for AWS infrastructure automation
 Implements using the AWS CDK
 """
 
+from typing import Any
 import aws_cdk as cdk
 from aws_cdk import App
 from .provider.bucket import BucketProvider
 from .provider.function import FunctionProvider
+from .provider.table import TableProvider
 from restmap.orchestrator.BaseOrchestrator import OrchestrationGraph
 
 class Stack(cdk.Stack):
@@ -59,7 +61,7 @@ class AWSExecutor:
         return self._functionProvider
 
     @property
-    def Table(self) -> Any:
+    def Table(self) -> TableProvider:
         """
         Provider for the serverless function interface
         """

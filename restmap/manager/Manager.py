@@ -27,7 +27,7 @@ from restmap.templateParser.TemplateParser import TemplateParser, TemplateSchema
 from restmap.resolver.Resolver import Resolver
 from restmap.compiler.Compiler import Compiler
 from restmap.executor.AWS.AWSExecutor import AWSExecutor
-from restmap.executor.BaseExecutor import AbstractBaseExecutor
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 from restmap.orchestrator.AWSOrchestrator import EventGridOrchestrator
 
 class Manager:

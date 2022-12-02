@@ -45,7 +45,11 @@ class EventGridOrchestrator(BaseOrchestrator):
             # Link up the functions based on the edges
             for edge, params in graph.edges.items():
                 start, target = edge
-                start = self.executor.Function.use_function(start)
-                start.triggers(target, params)
-            # 
+                # TODO Change this to a context managet to make the scope of the context clear
+                with self.executor.Function.useFunction(start) as f:
+                    assert f
+                    f.triggers(target, params)
+                    # TODO Ensure use function sets the context to utilize
+
+
             

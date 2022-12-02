@@ -29,7 +29,7 @@ class BucketProvider(BaseConstructProvider):
             return self
         if name in self._constructs:
             return self
-        bucket = s3.Bucket(self._stack, id=name)
+        bucket = s3.Bucket(self.stack, id=name)
         self._register_construct(name, bucket)
         self._active_construct = bucket
         return self
@@ -40,7 +40,7 @@ class BucketProvider(BaseConstructProvider):
         if uid in self._constructs:
             self._active_construct = self._constructs[uid] 
         else:
-            bucket = s3.Bucket.from_bucket_name(self._stack,id=uid, bucket_name=uid)
+            bucket = s3.Bucket.from_bucket_name(self.stack,id=uid, bucket_name=uid)
             self._select_construct(bucket)
 
         return self
@@ -52,7 +52,7 @@ class BucketProvider(BaseConstructProvider):
     
     def publicAccess(self, is_public:bool=False):
         """Configure access policies"""
-        print(f"Setting access to:  {'public' if is_public else 'private'} on bucket {self._selected_construct}")
+        print(f"Setting access to:  {'public' if is_public else 'private'} on bucket {self.selected_construct}")
         return self
     
     def versioned(self, is_versioned:bool=True):

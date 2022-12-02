@@ -9,12 +9,51 @@ Function
 ----------
 AWS Lambda implementation
 """
+from dataclasses import dataclass
 from typing import List, Union
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
+import aws_cdk.aws_sns as sns
+from aws_cdk.aws_lambda_event_sources import SnsEventSource
 from ..BaseConstructProvider import BaseConstructProvider
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 
+@dataclass
+class Function:
+    """
+    Implements the common abstraction interface for function objects
+    within the framework
+    """
+
+    provider: BaseConstructProvider
+
+    def withRole(self, role:str) -> 'Function':
+        """
+        Assigns a role to the function
+        Works against the active function construct
+        """
+        construct: lambda_.Function = self.provider.selected_construct
+        return self
+
+    def triggers(self, target: lambda_.Function, params: dict, synchronous:bool=True) -> 'Function':
+        """
+        Chains the given functions execution to the previous
+        execution of the other function. 
+
+        Can optionally set the list of execution outcome statuses
+        to trigger on. By default only triggers on successful execution.
+        """
+        #TODO Implement synch and asynch trigger mechanism
+        # Ensure that a construct is set
+        assert self.provider.selected_construct
+        current = self.provider.get_active_construct()
+        # Trigger the target function through the current function
+        # Reuse or create a new SQS topic
+        # TODO Access the table provider from here to 
+        topic = sns.Topic(self.provider.stack, 'TestTopic', {
+        })
+        current.add_event_source(SnsEventSource(topic))
+        return self
 
 class FunctionProvider(BaseConstructProvider):
     """
@@ -27,7 +66,7 @@ class FunctionProvider(BaseConstructProvider):
 
     def __init__(self, stack: cdk.Stack) -> None:
         super().__init__(stack)
-   
+
     def register(self, function: Union[FunctionDeployment, List[FunctionDeployment]]) -> List['FunctionProvider']:
         """
         Register one or more functions based on their specification
@@ -42,6 +81,7 @@ class FunctionProvider(BaseConstructProvider):
         return func_objs
         # Register dependencies amongst the functions
 
+    # TODO Abstract the return object to be able to pass any kind of Serverless Function instead of just an AWS lambda SDK instance
     def compile(self, function: FunctionDeployment) -> 'FunctionProvider':
         """
         Creates a AWS Lambda based on the FunctionDeployment configuration
@@ -49,44 +89,37 @@ class FunctionProvider(BaseConstructProvider):
         # Compile the passed code to a folder location to link the required artifacts into the docker compilation process in the CDK
         # TODO Store code file to target
         # TODO Create poetry.toml from requirements
-        func_obj = lambda_.Function(self._stack, 
+        func_obj = lambda_.Function(self.stack, 
             id=function.uid, 
             code=lambda_.Code.from_asset(str(function.code_location.parent.absolute())),
             handler=function.handler,
             runtime=lambda_.Runtime(function.runtime),
             )
-        self._select_construct(func_obj)
-        return self
+        return func_obj
     
-    def use_function(self, function: str) -> 'FunctionProvider':
+    def useFunction(self, function: str) -> 'FunctionProvider':
         """
         """
+        return FunctionContextManager(self, function)
+    
+
+
+class FunctionContextManager:
+    """
+    
+    """
+    def __init__(self, provider: FunctionProvider, function: str) -> None:
+        self.provider = provider
+        self.selected_function = function
+
+    def __enter__(self) -> FunctionProvider:
         try:
-            func_construct = self._constructs[function]
-            self._select_construct(func_construct)
-        except Exception as e:
-            # TODO explore the key error created here and reply with informative error
-            raise e
-        return self
-    
-    def withRole(self, role:str) -> 'FunctionProvider':
-        """
-        Assigns a role to the function
-        Works against the active function construct
-        """
-        construct: lambda_.Function = self._selected_construct
-        return self
+            function = self.provider._constructs[self.selected_function]
+            self.provider._select_construct(function)
+            return Function(self.provider) 
 
-    def triggers(self, target: lambda_.Function, params: dict):
-        """
-        Chains the given functions execution to the previous
-        execution of the other function. 
+        except KeyError:
+            raise KeyError(f"No function {self.selected_function} registered. If configured, register the function with the Provider first.") 
 
-        Can optionally set the list of execution outcome statuses
-        to trigger on. By default only triggers on successful execution.
-        """
-        # Ensure that a construct is set
-        assert self._selected_construct()
-        current = self._get_active_construct()
-        # Trigger the target function through the current function
-        target.add_event_source(source=target)
+    def __exit__(self):
+        self.provider._select_construct = None

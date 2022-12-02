@@ -8,7 +8,7 @@ from restmap.resolver.nodes.resolvers.EndpointResolver import EndpointResolver
 
 @pytest.fixture()
 def template_path():
-    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
 
 @pytest.fixture
 def graph():
@@ -19,7 +19,7 @@ def resolver(template_path: Path):
     parser = TemplateParser()
     template = parser.load(template_path)
     resolver_name = list(template.config.resolvers.keys())[0]
-    resolver = EndpointResolver(
+    resolver = ResolverNode(
         name = resolver_name,
         **template.config.resolvers[resolver_name]
     )
@@ -57,8 +57,8 @@ class TestEndpoints:
 class TestParameters:
 
     def test_add_param(self, graph: ResolutionGraph, param: ParamNode.ParamNode):
-        response = graph.add_parameter(param)
-        assert len(graph._params) == 1, "must add ParamNode to array of parameters"
+        response = graph.add_parameter(name=param.name, param=param)
+        assert len(graph._params) == 1
 
     def test_remove_param(self, graph: ResolutionGraph, param: ParamNode.ParamNode):
         graph.add_parameter(param) 
@@ -73,6 +73,6 @@ class TestResolvers:
         assert graph._resolvers[resolver.name] == resolver
 
     def test_remove_resolver(self, graph: ResolutionGraph, resolver: ResolverNode):
-        graph.add_resolver(resolver) 
-        response = graph.remove_resolver(resolver.name)
+        graph.add_resolver(name=resolver.name, resolver=resolver) 
+        response = graph.re
         assert len(graph._resolvers) == 0, "must remove EndpointNode from array of endpoints"

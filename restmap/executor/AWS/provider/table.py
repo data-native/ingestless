@@ -13,7 +13,7 @@ from ..BaseConstructProvider import BaseConstructProvider
 
 #TODO Implement the Provider
 
-class QueueProvider(BaseConstructProvider):
+class TableProvider(BaseConstructProvider):
     """
     Provides a builder interface for queue instances
     
@@ -24,13 +24,13 @@ class QueueProvider(BaseConstructProvider):
     def __init__(self, stack: cdk.Stack) -> None:
         super().__init__(stack)
 
-    def table(self, name: str='') -> 'QueueProvider':
+    def table(self, name: str='') -> 'TableProvider':
         """
         Create a new queue
         """
         raise NotImplementedError
     
-    def use_table(self, uid: str) -> 'QueueProvider':
+    def use_table(self, uid: str) -> 'TableProvider':
         """Uses an existing bucket for further configuration"""
         # Assumes bucket is in same account
         if uid in self._constructs:
@@ -39,7 +39,7 @@ class QueueProvider(BaseConstructProvider):
             pass
         return self
     
-    def withRole(self, role:str) -> 'QueueProvider':
+    def withRole(self, role:str) -> 'TableProvider':
         """"""
         raise NotImplementedError
     

@@ -2,7 +2,7 @@
 
 """
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List, Union, Any
 
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.resolver.ResolutionGraph import ResolutionGraph
