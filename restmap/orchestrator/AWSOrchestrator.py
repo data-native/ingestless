@@ -65,6 +65,7 @@ class EventGridOrchestrator(BaseOrchestrator):
                     f.triggers()
                 # Configure target to trigger on received event from start
                 with self.executor.Fucntion.useFunction(target) as f:
+                    pass
 
                 # with self.executor.Function.useFunction(start) as f:
                     # Writes to 
@@ -73,6 +74,7 @@ class EventGridOrchestrator(BaseOrchestrator):
                     # TODO Ensure use function sets the context to utilize
     
     def triggers(self):
+        pass
             
 
             

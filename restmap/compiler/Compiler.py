@@ -27,7 +27,6 @@ class Compiler(BaseCompiler):
         super().__init__(compilation_dir)
         #TODO Enable the compiler to receive a language compiler to select the type of compilation stack to use
         self._function_compiler = FunctionCompiler(compiler=self)
-        self.queue_compiler = QueueCompiler(compiler=self)
 
     def from_resolution_graph(self, graph: ResolutionGraph) -> List[FunctionDeployment]:
         """

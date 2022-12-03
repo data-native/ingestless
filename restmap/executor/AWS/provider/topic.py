@@ -10,12 +10,35 @@ Topic
 ----------
 AWS SNS
 """
-from typing import List, Union
+from dataclasses import dataclass
+from typing import List, Union, Any
 import aws_cdk as cdk
 import aws_cdk.aws_sns as sns
 from ..BaseConstructProvider import BaseConstructProvider
 
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
+
+@dataclass
+class Topic:
+    """
+    Implements the common abstraction interface for function objects
+    within the framework
+    """
+
+    provider: BaseConstructProvider
+    topic: sns.Topic
+
+    def withRole(self, role:str) -> 'Topic':
+        """
+        Assigns a role to the function
+        Works against the active function construct
+        """
+        return self
+    
+    def grant_publish(self, target):
+        """Allows the function to publish to the current topic"""
+        self.topic.grant_publish(target)
+        return self
 
 class TopicProvider(BaseConstructProvider):
     """
@@ -28,38 +51,54 @@ class TopicProvider(BaseConstructProvider):
 
     def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
+        self.executor = executor
    
     def register(self, topic) -> List['TopicProvider']:
         """
         Register one or more functions based on their specification
         """
+        # TODO Can potentially become required when a parametrized deployable instance is defined in the template. But not likely
         raise NotImplementedError
-        # Register dependencies amongst the functions
 
+    # TODO Rewrite for Topic handling
     def compile(self, function) -> 'TopicProvider':
         """
         Creates a AWS Lambda based on the FunctionDeployment configuration
         """
         raise NotImplementedError
     
-    def use_topic(self, function: str) -> 'TopicProvider':
+    def topic(self,
+        name: str,
+        args: dict
+    ) -> Topic:
         """
+        Create a topic to enable a pub/sub workflow within the application.
         """
-        raise NotImplementedError
+        topic = sns.Topic(self.stack, name)
+        self._constructs[name] = topic
+        return Topic(provider=self, topic=topic)
+
+    def use_topic(self, topic: str) -> 'TopicProvider':
+        return TopicContextManager(provider=self, topic=topic)
     
-    def withRole(self, role:str) -> 'TopicProvider':
-        """
-        Assigns a role to the function
-        Works against the active function construct
-        """
-        raise NotImplementedError
+    
+    
+class TopicContextManager:
+    """
+    
+    """
+    def __init__(self, provider: TopicProvider, topic: str) -> None:
+        self.provider = provider
+        self.selected_topic = topic
 
-    def triggers(self, target: sns.CfnTopic, params: dict):
-        """
-        Chains the given functions execution to the previous
-        execution of the other function. 
+    def __enter__(self) -> TopicProvider:
+        try:
+            topic = self.provider._constructs[self.selected_topic]
+            self.provider._select_construct(topic)
+            return self.provider 
 
-        Can optionally set the list of execution outcome statuses
-        to trigger on. By default only triggers on successful execution.
-        """
-        raise NotImplementedError
+        except KeyError:
+            raise KeyError(f"No function {self.selected_topic} registered. If configured, register the function with the Provider first.") 
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.provider.selected_construct = None

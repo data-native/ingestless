@@ -18,6 +18,7 @@ from aws_cdk.aws_lambda_event_sources import SnsEventSource
 from ..BaseConstructProvider import BaseConstructProvider
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
+
 @dataclass
 class Function:
     """
@@ -47,6 +48,7 @@ class FunctionProvider(BaseConstructProvider):
 
     def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
+        self.executor = executor
 
     def register(self, function: Union[FunctionDeployment, List[FunctionDeployment]]) -> List['FunctionProvider']:
         """
@@ -96,20 +98,11 @@ class FunctionProvider(BaseConstructProvider):
         # Ensure that a construct is set
         assert self.selected_construct
         current = self.get_active_construct()
-        # Trigger the target function through the current function
-        # Reuse or create a new SQS topic
-        # TODO Access the table provider from here to 
-        # Set the current lambda to publish to the given topic
 
         # Set the trigger on the target fuction to react to the chosen topic
-        topic = sns.Topic(self.provider.stack, 'TestTopic', {
-        })
-        
-        # Grant publish to the topic
-        topic.grant_publish(target)
-        cdk.CfnOutput(self.stack, 'snsTopicArn',
-                value=topic.topic_arn
-        )
+        # request a new topic named after the function target, so that any other function can read from this
+        # TODO Can likely be optimized to use build in filter on a shared "successfull execution" topic based on parameters (COST REDUCTION OPTION)
+        topic = self.executor.Topic.topic(current)
         # The code changes need to be applied on the function 
         # self.provider.
         
@@ -123,7 +116,7 @@ class FunctionContextManager:
     """
     def __init__(self, provider: FunctionProvider, function: str) -> None:
         self.provider = provider
-        self.selected_function = function
+        self.selected_topic = function
 
     def __enter__(self) -> FunctionProvider:
         try:

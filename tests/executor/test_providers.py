@@ -9,10 +9,13 @@ from pathlib import Path
 
 # Import the providers
 from restmap.manager.Manager import Manager
+from restmap.executor.AbstractTopicProvider import AbstractTopicProvider
 from restmap.executor.AWS.provider.function import FunctionContextManager
-# from restmap.executor.AWS.provider.bucket import BucketProvider
 
-pytest.fixture
+# from restmap.executor.AWS.provider.bucket import BucketProvider
+from restmap.executor.AWS.provider.topic import Topic, TopicProvider
+
+@pytest.fixture
 def manager():
     return Manager('AWS', 'teststack')
 
@@ -76,3 +79,23 @@ class TestFunctionProvider:
         
         manager._executor.Function.triggers
 
+
+class TestTopicProvider:
+    """
+    Tests the standard interface for managing NotificationTopics
+    """
+
+    def test_topic(self, manager: Manager):
+        topic = manager._executor.Topic.topic('testtopic', {})
+        assert isinstance(topic, Topic), "Topic must be returned as an abstraction enabling access to a common management interface independent of the "
+        assert manager._executor.Topic._constructs[0] == topic.topic
+
+    def test_use_topic(self, manager: Manager):
+        topic = manager._executor.Topic.topic('testtopic', {})
+        with manager._executor.Topic.use_topic('testtopic') as t:
+            assert isinstance(t, TopicProvider) 
+            assert t.selected_construct == topic.topic
+        assert not manager._executor.Topic.selected_construct, "After exiting the context, the manager must not have a selected_construct set"
+
+    def test_grant_publish(self, manager: Manager):
+        manager._executor.Topic.topic
