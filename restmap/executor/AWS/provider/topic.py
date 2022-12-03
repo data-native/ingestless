@@ -28,17 +28,6 @@ class Topic:
     provider: BaseConstructProvider
     topic: sns.Topic
 
-    def withRole(self, role:str) -> 'Topic':
-        """
-        Assigns a role to the function
-        Works against the active function construct
-        """
-        return self
-    
-    def grant_publish(self, target):
-        """Allows the function to publish to the current topic"""
-        self.topic.grant_publish(target)
-        return self
 
 class TopicProvider(BaseConstructProvider):
     """
@@ -78,27 +67,18 @@ class TopicProvider(BaseConstructProvider):
         self._constructs[name] = topic
         return Topic(provider=self, topic=topic)
 
-    def use_topic(self, topic: str) -> 'TopicProvider':
-        return TopicContextManager(provider=self, topic=topic)
+    def withRole(self, role:str) -> 'Topic':
+        """
+        Assigns a role to the function
+        Works against the active function construct
+        """
+        self._ensure_construct_scope()
+        raise NotImplementedError
     
-    
-    
-class TopicContextManager:
-    """
-    
-    """
-    def __init__(self, provider: TopicProvider, topic: str) -> None:
-        self.provider = provider
-        self.selected_topic = topic
+    def grant_publish(self, target):
+        """Allows the function to publish to the current topic"""
+        self._ensure_construct_scope()
+        self.topic.grant_publish(target)
+        return self
 
-    def __enter__(self) -> TopicProvider:
-        try:
-            topic = self.provider._constructs[self.selected_topic]
-            self.provider._select_construct(topic)
-            return self.provider 
-
-        except KeyError:
-            raise KeyError(f"No function {self.selected_topic} registered. If configured, register the function with the Provider first.") 
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        self.provider.selected_construct = None
+    

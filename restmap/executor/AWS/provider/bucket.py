@@ -56,7 +56,7 @@ class BucketProvider(BaseConstructProvider):
     
     def publicAccess(self, is_public:bool=False):
         """Configure access policies"""
-        print(f"Setting access to:  {'public' if is_public else 'private'} on bucket {self.selected_construct}")
+        print(f"Setting access to:  {'public' if is_public else 'private'} on bucket {self._construct_in_scope}")
         return self
     
     def versioned(self, is_versioned:bool=True):

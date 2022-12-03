@@ -92,10 +92,12 @@ class TestTopicProvider:
 
     def test_use_topic(self, manager: Manager):
         topic = manager._executor.Topic.topic('testtopic', {})
-        with manager._executor.Topic.use_topic('testtopic') as t:
+        with manager._executor.Topic.use('testtopic') as t:
             assert isinstance(t, TopicProvider) 
-            assert t.selected_construct == topic.topic
-        assert not manager._executor.Topic.selected_construct, "After exiting the context, the manager must not have a selected_construct set"
+            assert t._construct_in_scope == topic.topic
+        assert not manager._executor.Topic._construct_in_scope, "After exiting the context, the manager must not have a selected_construct set"
 
     def test_grant_publish(self, manager: Manager):
-        manager._executor.Topic.topic
+        topic = manager._executor.Topic.topic('testtopic', {})
+        with manager._executor.Topic.use('testtopic') as t:
+            t.grant_publish()

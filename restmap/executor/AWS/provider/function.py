@@ -33,7 +33,7 @@ class Function:
         Assigns a role to the function
         Works against the active function construct
         """
-        construct: lambda_.Function = self.provider.selected_construct
+        construct: lambda_.Function = self.provider._construct_in_scope
         return self
 
 
@@ -96,7 +96,7 @@ class FunctionProvider(BaseConstructProvider):
         """
         #TODO Implement synch and asynch trigger mechanism
         # Ensure that a construct is set
-        assert self.selected_construct
+        assert self._construct_in_scope
         current = self.get_active_construct()
 
         # Set the trigger on the target fuction to react to the chosen topic
