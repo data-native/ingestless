@@ -14,7 +14,7 @@ from typing import List, Union
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_sns as sns
-from aws_cdk.aws_lambda_event_sources import SnsEventSource
+import aws_cdk.aws_lambda_event_sources as event_sources
 from ..BaseConstructProvider import BaseConstructProvider
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
@@ -25,17 +25,7 @@ class Function:
     Implements the common abstraction interface for function objects
     within the framework
     """
-
     provider: BaseConstructProvider
-
-    def withRole(self, role:str) -> 'Function':
-        """
-        Assigns a role to the function
-        Works against the active function construct
-        """
-        construct: lambda_.Function = self.provider._construct_in_scope
-        return self
-
 
 class FunctionProvider(BaseConstructProvider):
     """
@@ -79,14 +69,13 @@ class FunctionProvider(BaseConstructProvider):
             runtime=lambda_.Runtime(function.runtime),
             )
         return func_obj
-    
-    def useFunction(self, function: str) -> 'FunctionProvider':
-        """
-        """
-        return FunctionContextManager(self, function)
-    
 
-    def triggers(self, target: lambda_.Function, params: dict, synchronous:bool=True) -> 'Function':
+    def notify(self, 
+        target: str, 
+        params: dict, 
+        synchronous:bool=True,
+        on:str='success',
+        ) -> 'Function':
         """
         Chains the given functions execution to the previous
         execution of the other function. 
@@ -96,36 +85,53 @@ class FunctionProvider(BaseConstructProvider):
         """
         #TODO Implement synch and asynch trigger mechanism
         # Ensure that a construct is set
-        assert self._construct_in_scope
+        self._ensure_construct_scope()
         current = self.get_active_construct()
+        try:
+            target = self._constructs[target]
+        except KeyError:
+            raise KeyError(f"No funciton {target} registered in the system. Run `register` on the function prior to an scheduling attempt.")
 
         # Set the trigger on the target fuction to react to the chosen topic
         # request a new topic named after the function target, so that any other function can read from this
         # TODO Can likely be optimized to use build in filter on a shared "successfull execution" topic based on parameters (COST REDUCTION OPTION)
-        topic = self.executor.Topic.topic(current)
-        # The code changes need to be applied on the function 
-        # self.provider.
-        
+        return self
+    
+    def react_to(
+        self,
+        event_source: str,
+        name: str,
+        args: dict         
+    ):
+        """
+        Configures the function to trigger on an event_source.
+        @event_source: Name of the construct type on which to react
+        @name: Name of the actual event source instance in the specified construct class
+        """
+        # TODO refactor to reference a SST construct list for reference. This data is duplicated across the framework
+        event_source_switch = {
+            'topic': self.executor.Topic.topic,
+            'bucket': self.executor.Bucket.bucket,
+            'queue': self.executor.Queue.queue,
+        }
+        event_source = event_source_switch[event_source](name)
+
+        # This registration needs to be provided by each implementation
+        # to let the system know how the event routing should be translated onto the actual
+        # backend system. 
+        event_source_type = {
+            'topic': event_sources.SnsEventSource,
+            'bucket': event_sources.S3EventSource,
+            'queue': event_sources.SqsEventSource,
+        }
         # This is done natively in AWS CDK
-        target.add_event_source(SnsEventSource(topic))
+        self._select_construct.add_event_source(event_source_type[event_source](event_source))
         return self
 
-class FunctionContextManager:
-    """
-    
-    """
-    def __init__(self, provider: FunctionProvider, function: str) -> None:
-        self.provider = provider
-        self.selected_topic = function
-
-    def __enter__(self) -> FunctionProvider:
-        try:
-            function = self.provider._constructs[self.selected_function]
-            self.provider._select_construct(function)
-            return Function(self.provider) 
-
-        except KeyError:
-            raise KeyError(f"No function {self.selected_function} registered. If configured, register the function with the Provider first.") 
-
-    def __exit__(self):
-        self.provider._select_construct = None
+    def withRole(self, role:str) -> 'Function':
+        """
+        Assigns a role to the function
+        Works against the active function construct
+        """
+        construct: lambda_.Function = self._construct_in_scope
+        return self

@@ -60,12 +60,12 @@ class EventGridOrchestrator(BaseOrchestrator):
                 
                 # target is set to be triggered on sns message
                 # Configure start to emit an event on finish
-                with self.executor.Function.useFunction(start) as f:
-                    # Configuring a sns topic call gets compiled into code through a parametrized template
-                    f.triggers()
+                with self.executor.Function.use(start) as f:
+                    # The function notifies on success to a topic 
+                    f.triggers(on='success', target=target, args={})
                 # Configure target to trigger on received event from start
-                with self.executor.Fucntion.useFunction(target) as f:
-                    pass
+                with self.executor.Function.use(target) as f:
+                    f.reacts_to()
 
                 # with self.executor.Function.useFunction(start) as f:
                     # Writes to 

@@ -33,7 +33,7 @@ def manager():
 
 @pytest.fixture()
 def template_path():
-    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
 
 class TestOrchestrator:
     """

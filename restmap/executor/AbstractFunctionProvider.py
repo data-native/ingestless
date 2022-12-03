@@ -8,7 +8,7 @@ class AbstractFunctionProvider(ABC):
     """
     # TODO Provide implementation 
     @abstractmethod
-    def register(self, function: Union[FunctionDeployment, List[FunctionDeployment]]) -> List['FunctionProvider']:
+    def register(self, function: Union[FunctionDeployment, List[FunctionDeployment]]) -> List['AbstractFunctionProvider']:
         """
         Register one or more functions based on their specification
         """
@@ -17,11 +17,6 @@ class AbstractFunctionProvider(ABC):
     def compile(self, function: FunctionDeployment) -> 'AbstractFunctionProvider':
         """
         Creates a AWS Lambda based on the FunctionDeployment configuration
-        """
-    
-    @abstractmethod
-    def use_function(self, function: str) -> 'AbstractFunctionProvider':
-        """
         """
     
     @abstractmethod

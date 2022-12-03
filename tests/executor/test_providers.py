@@ -10,7 +10,7 @@ from pathlib import Path
 # Import the providers
 from restmap.manager.Manager import Manager
 from restmap.executor.AbstractTopicProvider import AbstractTopicProvider
-from restmap.executor.AWS.provider.function import FunctionContextManager
+from restmap.executor.AWS.BaseConstructProvider import BaseConstructProvider, ConstructContextManager
 
 # from restmap.executor.AWS.provider.bucket import BucketProvider
 from restmap.executor.AWS.provider.topic import Topic, TopicProvider
@@ -21,8 +21,7 @@ def manager():
 
 @pytest.fixture
 def template_path():
-    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
-    
+    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
 
 class TestBucketProvider:
     """
@@ -35,28 +34,28 @@ class TestFunctionProvider:
     Tests the standard interface to the function provider
     """
 
-    def test_register(manager: Manager):
+    def test_register(self, manager: Manager):
         raise NotImplementedError
 
-    def test_compile(manager: Manager):
+    def test_compile(self, manager: Manager):
         raise NotImplementedError
 
-    def test_use_function(manager: Manager):
+    def test_use_function(self, manager: Manager):
         raise NotImplementedError
 
-    def test_withRole(manager: Manager):
+    def test_withRole(self, manager: Manager):
         raise NotImplementedError
     
-    def test_using_function(manager: Manager):
+    def test_using_function(self,template_path: Path, manager: Manager):
         """
         Can set a context for a selected function construct to become
         the target of all following interactions with the FunctionProvider.
         """
-        manager.plan()
+        manager.plan(template_path)
         # function is a context manger
         target_function = manager.executor._constructs.keys()[0]
-        assert isinstance(manager._executor.Function.useFunction(), FunctionContextManager)
-        with manager._executor.Function.useFunction(target_function) as f:
+        assert isinstance(manager._executor.Function.useFunction(), ConstructContextManager)
+        with manager._executor.Function.use(target_function) as f:
             # context sets the selected function onto provider._selected_construct
             assert f._selected_function, "A function was selected and set on the Provider instance"
             assert f._selected_function.uid == target_function
@@ -66,7 +65,7 @@ class TestFunctionProvider:
 
 
 
-    def test_triggers(template_path: Path, manager: Manager):
+    def test_triggers(self, template_path: Path, manager: Manager):
         """
         Can create a trigger relationship between two registered functions
         that gets natively deployed onto the backend for high-performance orchestration
@@ -87,8 +86,8 @@ class TestTopicProvider:
 
     def test_topic(self, manager: Manager):
         topic = manager._executor.Topic.topic('testtopic', {})
-        assert isinstance(topic, Topic), "Topic must be returned as an abstraction enabling access to a common management interface independent of the "
-        assert manager._executor.Topic._constructs[0] == topic.topic
+        assert isinstance(topic, Topic), "Topic must be returned as an abstraction enabling access to a common management interface independent of the backend implementation of the construct"
+        # assert manager._executor.Topic._constructs[0] == topic.topic
 
     def test_use_topic(self, manager: Manager):
         topic = manager._executor.Topic.topic('testtopic', {})
@@ -97,7 +96,9 @@ class TestTopicProvider:
             assert t._construct_in_scope == topic.topic
         assert not manager._executor.Topic._construct_in_scope, "After exiting the context, the manager must not have a selected_construct set"
 
-    def test_grant_publish(self, manager: Manager):
+    def test_grant_publish(self, template_path: Path, manager: Manager):
+        manager.plan(template_path)
+        function = manager._executor.Function._constructs
         topic = manager._executor.Topic.topic('testtopic', {})
         with manager._executor.Topic.use('testtopic') as t:
             t.grant_publish()
