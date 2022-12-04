@@ -38,8 +38,6 @@ class Compiler(BaseCompiler):
         steps to handle the conditional code and infrastructure creation based 
         on the ResolutionGraph components.
         """
-        # Conduct reference orchestration before compiling
-
         #TODO Resolver must parse kind:str to Construct Enum when resolving the ResolutionGraph 
         kind_switch: dict[Constructs, BaseCompiler] = {
             Constructs.Endpoint : self._compile_endpoint,

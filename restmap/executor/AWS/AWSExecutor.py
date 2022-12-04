@@ -12,6 +12,7 @@ from .provider.bucket import BucketProvider
 from .provider.function import FunctionProvider
 from .provider.table import TableProvider
 from .provider.topic import TopicProvider
+from .provider.queue import QueueProvider
 from restmap.orchestrator.BaseOrchestrator import OrchestrationGraph
 
 class Stack(cdk.Stack):
@@ -35,6 +36,7 @@ class AWSExecutor:
         self._bucketProvider = BucketProvider(executor=self, stack=self._stack)
         self._functionProvider = FunctionProvider(executor=self, stack=self._stack)
         self._topicProvider = TopicProvider(executor=self, stack=self._stack)
+        self._queueProvider = QueueProvider(executor=self, stack=self._stack)
         #TODO Add additional constructor providers
     
     def _init_stack(self,scope:App, construct_id='') -> cdk.Stack:
@@ -75,6 +77,13 @@ class AWSExecutor:
         Provider for the serverless pub/sub topic interface
         """
         return self._topicProvider
+
+    @property
+    def Queue(self) -> QueueProvider:
+        """
+        Provider for the serverless pub/sub topic interface
+        """
+        return self._queueProvider
 
     # METHOD API _________________
     # These methods manage the IaC configuration and deployment process

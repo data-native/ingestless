@@ -12,9 +12,9 @@ AWS EventGrid
 import aws_cdk as cdk
 import aws_cdk.aws_sqs as sqs
 from ..BaseConstructProvider import BaseConstructProvider
+from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 
 #TODO Implement the Provider
-
 class QueueProvider(BaseConstructProvider):
     """
     Provides a builder interface for queue instances
@@ -23,16 +23,17 @@ class QueueProvider(BaseConstructProvider):
     """
     #TODO: Complete implementation of method API
 
-    def __init__(self, stack: cdk.Stack) -> None:
+    def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
+        self.executor = executor
 
-    def queue(self, name: str='') -> 'QueueProvider':
+    def register(self, name: str='') -> 'QueueProvider':
         """
         Create a new queue
         """
         raise NotImplementedError
     
-    def use_queue(self, uid: str) -> 'QueueProvider':
+    def use(self, uid: str) -> 'QueueProvider':
         """Uses an existing bucket for further configuration"""
         # Assumes bucket is in same account
         if uid in self._constructs:

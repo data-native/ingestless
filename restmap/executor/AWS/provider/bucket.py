@@ -7,6 +7,7 @@ AWS S3 implementation
 """
 import aws_cdk as cdk
 import aws_cdk.aws_s3 as s3
+from jsii.errors import JSIIError
 from ..BaseConstructProvider import BaseConstructProvider
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 
@@ -25,20 +26,20 @@ class BucketProvider(BaseConstructProvider):
         super().__init__(stack)
         self.executor = executor
 
-    def bucket(self, name: str='') -> 'BucketProvider':
+    def register(self, name: str='') -> 'BucketProvider':
         """
         Create a new S3 bucket
         """
-        if name == '':
-            return self
-        if name in self._constructs:
-            return self
-        bucket = s3.Bucket(self.stack, id=name)
-        self._register_construct(name, bucket)
-        self._active_construct = bucket
+        try:
+            bucket = s3.Bucket(self.stack, id=name)
+            self._register_construct(name, bucket)
+            self._active_construct = bucket
+        except JSIIError:
+            print(f"Construct {name} already present in the stack.")
+            # return Topic(provider=self, topic=self._constructs[name])  
         return self
     
-    def useBucket(self, uid: str) -> 'BucketProvider':
+    def use(self, uid: str) -> 'BucketProvider':
         """Uses an existing bucket for further configuration"""
         # Assumes bucket is in same account
         if uid in self._constructs:
