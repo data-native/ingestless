@@ -10,11 +10,13 @@ Function
 AWS Lambda implementation
 """
 from dataclasses import dataclass
+from jsii.errors import JSIIError
 from typing import List, Union
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_sns as sns
 import aws_cdk.aws_lambda_event_sources as event_sources
+
 from ..BaseConstructProvider import BaseConstructProvider
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
@@ -40,36 +42,33 @@ class FunctionProvider(BaseConstructProvider):
         super().__init__(stack)
         self.executor = executor
 
-    def register(self, function: Union[FunctionDeployment, List[FunctionDeployment]]) -> List['FunctionProvider']:
+    def register(self, 
+        function: Union[str, FunctionDeployment, List[FunctionDeployment]]) -> 'FunctionProvider':
         """
         Register one or more functions based on their specification
         """
+        if isinstance(function, str):
+            # Tries a retrieval of an existing function
+            self._select_construct(function)
+            return self
+
+        # Attempt registration of the new functions
+        # TODO Extend the parametrization 
         if not isinstance(function, list):
             function = [function]
+            # Manage the case that the  
         func_objs = []
         for func_conf in function:
-            func_obj = self.compile(function=func_conf)
-            func_objs.append(func_obj)
-            self._constructs[func_conf.uid] = func_obj
-        return func_objs
-        # Register dependencies amongst the functions
+            try:
+                func_obj = self._compile(function=func_conf)
+                func_objs.append(func_obj)
+                self._constructs[func_conf.uid] = func_obj
+            except JSIIError:
+                print(f"Construct {func_conf.uid} already present in the stack.")
+                # return Topic(provider=self, topic=self._constructs[name])  
+        return self
 
     # TODO Abstract the return object to be able to pass any kind of Serverless Function instead of just an AWS lambda SDK instance
-    def compile(self, function: FunctionDeployment) -> 'FunctionProvider':
-        """
-        Creates a AWS Lambda based on the FunctionDeployment configuration
-        """
-        # Compile the passed code to a folder location to link the required artifacts into the docker compilation process in the CDK
-        # TODO Store code file to target
-        # TODO Create poetry.toml from requirements
-        func_obj = lambda_.Function(self.stack, 
-            id=function.uid, 
-            code=lambda_.Code.from_asset(str(function.code_location.parent.absolute())),
-            handler=function.handler,
-            runtime=lambda_.Runtime(function.runtime),
-            )
-        return func_obj
-
     def notify(self, 
         target: str, 
         params: dict, 
@@ -97,9 +96,10 @@ class FunctionProvider(BaseConstructProvider):
         # TODO Can likely be optimized to use build in filter on a shared "successfull execution" topic based on parameters (COST REDUCTION OPTION)
         return self
     
-    def react_to(
+    def trigger(
         self,
-        event_source: str,
+        on: str,
+        source: str,
         name: str,
         args: dict         
     ):
@@ -110,11 +110,13 @@ class FunctionProvider(BaseConstructProvider):
         """
         # TODO refactor to reference a SST construct list for reference. This data is duplicated across the framework
         event_source_switch = {
-            'topic': self.executor.Topic.topic,
-            'bucket': self.executor.Bucket.bucket,
-            'queue': self.executor.Queue.queue,
+            'topic': self.executor.Topic,
+            'bucket': self.executor.Bucket,
+            'queue': self.executor.Queue,
         }
-        event_source = event_source_switch[event_source](name)
+        # TODO Make args optional so we can retrieve the construct easier
+        # TODO register must return existing construct within active scope
+        event_source = event_source_switch[source].register(name, args)
 
         # This registration needs to be provided by each implementation
         # to let the system know how the event routing should be translated onto the actual
@@ -125,7 +127,8 @@ class FunctionProvider(BaseConstructProvider):
             'queue': event_sources.SqsEventSource,
         }
         # This is done natively in AWS CDK
-        self._select_construct.add_event_source(event_source_type[event_source](event_source))
+        # TODO Register the event source for the given event types only (Or for all, depending on how this will work)
+        self.get_active_construct().add_event_source(event_source_type[source](event_source.get_active_construct()))
         return self
 
     def withRole(self, role:str) -> 'Function':
@@ -135,3 +138,19 @@ class FunctionProvider(BaseConstructProvider):
         """
         construct: lambda_.Function = self._construct_in_scope
         return self
+    
+    # INTERNAL API_________________
+    def _compile(self, function: FunctionDeployment) -> lambda_.Function:
+        """
+        Creates a AWS Lambda based on the FunctionDeployment configuration
+        """
+        # Compile the passed code to a folder location to link the required artifacts into the docker compilation process in the CDK
+        # TODO Store code file to target
+        # TODO Create poetry.toml from requirements
+        func_obj = lambda_.Function(self.stack, 
+            id=function.uid, 
+            code=lambda_.Code.from_asset(str(function.code_location.parent.absolute())),
+            handler=function.handler,
+            runtime=lambda_.Runtime(function.runtime),
+            )
+        return func_obj

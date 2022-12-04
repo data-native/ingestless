@@ -1,6 +1,5 @@
 import aws_cdk as cdk
 
-
 class BaseConstructProvider:
     """
     Implements general methods used to manager
@@ -42,7 +41,6 @@ class ConstructContextManager:
             topic = self.provider._constructs[self.selected_construct]
             self.provider._select_construct(topic)
             return self.provider 
-
         except KeyError:
             raise KeyError(f"No function {self.selected_construct} registered. If configured, register the function with the Provider first.") 
 

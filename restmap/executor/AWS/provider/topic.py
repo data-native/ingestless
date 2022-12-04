@@ -11,6 +11,7 @@ Topic
 AWS SNS
 """
 from dataclasses import dataclass
+from jsii.errors import JSIIError
 from typing import List, Union, Any
 import aws_cdk as cdk
 import aws_cdk.aws_sns as sns
@@ -28,7 +29,6 @@ class Topic:
     provider: BaseConstructProvider
     topic: sns.Topic
 
-
 class TopicProvider(BaseConstructProvider):
     """
     Executes the constructs compiled by the Compile stage
@@ -41,33 +41,25 @@ class TopicProvider(BaseConstructProvider):
     def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
         super().__init__(stack)
         self.executor = executor
-   
-    def register(self, topic) -> List['TopicProvider']:
-        """
-        Register one or more functions based on their specification
-        """
-        # TODO Can potentially become required when a parametrized deployable instance is defined in the template. But not likely
-        raise NotImplementedError
-
-    # TODO Rewrite for Topic handling
-    def compile(self, function) -> 'TopicProvider':
-        """
-        Creates a AWS Lambda based on the FunctionDeployment configuration
-        """
-        raise NotImplementedError
     
-    def topic(self,
+    def register(self,
         name: str,
         args: dict
-    ) -> Topic:
+    ) -> 'TopicProvider':
         """
         Create a topic to enable a pub/sub workflow within the application.
+        If the topic is already defined, return it instead.
         """
-        topic = sns.Topic(self.stack, name)
-        self._constructs[name] = topic
-        return Topic(provider=self, topic=topic)
+        try:
+            # TODO Extend the parametrization 
+            topic = sns.Topic(self.stack, name)
+            self._constructs[name] = topic
+        except JSIIError:
+            print(f"Construct {name} already present in the stack.")
+            # return Topic(provider=self, topic=self._constructs[name])  
+        return self
 
-    def withRole(self, role:str) -> 'Topic':
+    def withRole(self, role:str) -> 'TopicProvider':
         """
         Assigns a role to the function
         Works against the active function construct
@@ -75,10 +67,11 @@ class TopicProvider(BaseConstructProvider):
         self._ensure_construct_scope()
         raise NotImplementedError
     
-    def grant_publish(self, target):
+    # PRIVILEDGES__________
+    def grant_publish(self, target) -> 'TopicProvider':
         """Allows the function to publish to the current topic"""
         self._ensure_construct_scope()
-        self.topic.grant_publish(target)
+        self._construct_in_scope.grant_publish(target)
         return self
 
     

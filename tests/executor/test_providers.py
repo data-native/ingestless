@@ -46,7 +46,7 @@ class TestFunctionProvider:
     def test_withRole(self, manager: Manager):
         raise NotImplementedError
     
-    def test_using_function(self,template_path: Path, manager: Manager):
+    def test_use(self,template_path: Path, manager: Manager):
         """
         Can set a context for a selected function construct to become
         the target of all following interactions with the FunctionProvider.
@@ -63,9 +63,7 @@ class TestFunctionProvider:
         assert not manager._executor.Function._selected_function, "Exiting the context must clear the selected function in the provider"
         # All methods that where called on the function manager within the scope of the context manager are applied only to the selected construct
 
-
-
-    def test_triggers(self, template_path: Path, manager: Manager):
+    def test_notify(self, template_path: Path, manager: Manager):
         """
         Can create a trigger relationship between two registered functions
         that gets natively deployed onto the backend for high-performance orchestration
@@ -75,8 +73,23 @@ class TestFunctionProvider:
         # Need to register the functions with the provider
         dplys = manager._deployables
         manager._executor.Function.register(dplys)
+        with manager._executor.Function.use(function_name) as f:
+            f.notify()
+
+    def test_trigger(self, template_path: Path, manager: Manager):
+        """
+        Can trigger on a given event source 
+        """
+        manager.plan(str(template_path.absolute()))
+        # Need to register the functions with the provider
+        dplys = manager._deployables
+        manager._executor.Function.register(dplys)
+        # Select a source to react to 
+        function_name = ''
+        manager._executor.Topic.register('success_topic')
+        with manager._executor.Function.use(function_name) as f:
+            f.trigger(on='topic', name='success_topic') 
         
-        manager._executor.Function.triggers
 
 
 class TestTopicProvider:

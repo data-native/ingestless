@@ -28,7 +28,7 @@ from restmap.resolver.Resolver import Resolver
 from restmap.compiler.Compiler import Compiler
 from restmap.executor.AWS.AWSExecutor import AWSExecutor
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
-from restmap.orchestrator.AWSOrchestrator import EventGridOrchestrator
+from restmap.orchestrator.ServiceBusOrchestrator import ServiceBusOrchestrator
 
 class Manager:
     """
@@ -43,8 +43,7 @@ class Manager:
         #TODO Extend to handle multiple compilation processes
         self._compiler= Compiler()
         self._executor = self._init_executor(executor, name)
-        self._orchestrator = EventGridOrchestrator(executor=self._executor)
-
+        self._orchestrator = ServiceBusOrchestrator(executor=self._executor)
         self._deployables = []
     
     def _init_executor(self, executor: str, name: str) -> AbstractBaseExecutor:
