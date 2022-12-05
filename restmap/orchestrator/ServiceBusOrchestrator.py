@@ -69,10 +69,14 @@ class ServiceBusOrchestrator(BaseOrchestrator):
                             'on':['sucess', 'skipped'], # Should publish a success event on both successfull completion and when execution was skipped
                         }
                         f.trigger(on='success', source='topic', name='execution_success', args=msg_params)
+                        # Can be called manually, or be set in the __exit__ function of the context manager
+                        f.compile()
                     # Configure target to trigger on received event from start
                     with self.executor.Function.use(target) as f:
                         # Define the parameters for the event trigger here
                         trigger_params = {
                         }
                         f.trigger(on='topic', name='execution_success', args=trigger_params)
+                        f.compile()
+                        # Can be called manually, or be set in the __exit__ function of the context manager
     

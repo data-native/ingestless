@@ -37,7 +37,7 @@ class TestCompiler:
     def test_from_resolution_graph_endpoint(self, manager: Manager, compiler: Compiler):
         template = manager._parser.load('./ingestless/tests/restmap/assets/complex_endpoint.yml')
         resolution_graph = manager._resolver.resolve(template)
-        deployables = compiler.from_resolution_graph(resolution_graph)
+        deployables = compiler.from_orchestration_graph(resolution_graph)
         assert all([isinstance(d, FunctionDeployment) for d in deployables])
         # TODO Generalize to all types of supported entities
         for deployment in deployables:

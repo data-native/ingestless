@@ -147,7 +147,7 @@ class TestOrchestrator:
         """
         template = manager._parser.load(template_path)
         resolution_graph = manager._resolver.resolve(template)
-        deployables = manager._compiler.from_resolution_graph(resolution_graph)
+        deployables = manager._compiler.from_orchestration_graph(resolution_graph)
         orchestration_graph = manager._orchestrator.orchestrate(deployables, resolution_graph)
         assert isinstance(orchestration_graph, OrchestrationGraph)
         assert False, "must set RelativeURLNode dependencies on BaseURL"

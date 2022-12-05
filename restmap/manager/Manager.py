@@ -80,10 +80,10 @@ class Manager:
         resolution_graph = self._resolver.resolve(template)
         # Store updated version
         self._state.state = resolution_graph
-        # Compile the deployable assets
-        compiled_deployables = self._compiler.from_resolution_graph(resolution_graph)
         # Computes the dependencies during execution
-        self._deployables = self._orchestrator.orchestrate(deployables=compiled_deployables, resolution_graph=resolution_graph)
+        orchestration_graph = self._orchestrator.orchestrate(deployables=compiled_deployables, resolution_graph=resolution_graph)
+        # Compile the deployable assets
+        compiled_deployables = self._compiler.from_orchestration_graph(orchestration_graph)
         # Create the stack in the IaC Executor
         self._orchestrator.deploy(self._deployables, dryrun=True)
         return StatusCode.SUCCESS

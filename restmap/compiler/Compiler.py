@@ -28,7 +28,7 @@ class Compiler(BaseCompiler):
         #TODO Enable the compiler to receive a language compiler to select the type of compilation stack to use
         self._function_compiler = FunctionCompiler(compiler=self)
 
-    def from_resolution_graph(self, graph: ResolutionGraph) -> List[FunctionDeployment]:
+    def from_orchestration_graph(self, graph: ResolutionGraph) -> List[FunctionDeployment]:
         """
         Traverses the resolution graph to compile the required components
         using the logic implemented in the resource Compiler classes.
