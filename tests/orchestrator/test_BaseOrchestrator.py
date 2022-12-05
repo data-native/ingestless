@@ -11,9 +11,14 @@ from restmap.orchestrator.BaseOrchestrator import BaseOrchestrator, Orchestratio
 
 @pytest.fixture
 def function():
-    return  FunctionDeployment(code='', runtime='python@3.10', params=DeploymentParams(
+    return  FunctionDeployment(
+        code = '',
+        code_location='', 
+        runtime='python@3.10', 
+        params=DeploymentParams(
         1, 1, 300, [], {}, [], True, True, 100
-        ), requirements=[]) 
+        ), 
+        requirements=[]) 
 
 @pytest.fixture
 def orchestrator():
@@ -33,7 +38,7 @@ def manager():
 
 @pytest.fixture()
 def template_path():
-    return Path('./tests/restmap/assets/templates/complex_endpoint.yml')
+    return Path('./ingestless/tests/restmap/assets/complex_endpoint.yml')
 
 class TestOrchestrator:
     """
@@ -147,11 +152,8 @@ class TestOrchestrator:
         """
         template = manager._parser.load(template_path)
         resolution_graph = manager._resolver.resolve(template)
-        deployables = manager._compiler.from_orchestration_graph(resolution_graph)
-        orchestration_graph = manager._orchestrator.orchestrate(deployables, resolution_graph)
+        orchestration_graph = manager._orchestrator.orchestrate(resolution_graph)
         assert isinstance(orchestration_graph, OrchestrationGraph)
-        assert False, "must set RelativeURLNode dependencies on BaseURL"
-        assert False, "must EndpointResolver dependencies on the Endpoint" 
 
 class TestOrchestrationNode:
     """

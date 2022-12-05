@@ -112,12 +112,12 @@ class FunctionDeployment:
     
     Defines the contract between `Compiler` and `BackendProvider`
     """
-    code : str
     runtime: str 
     requirements: List[FunctionRequirement] 
     params: DeploymentParams
     # Elements populated after deployment 
     code_location: Path
+    code : str = ''
     uid : str = ''
     handler: str = 'handler' # Code compilation defaults to generating a function handler 
     is_deployed: bool = False

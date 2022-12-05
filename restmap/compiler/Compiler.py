@@ -5,7 +5,7 @@
 from typing import List
 from enums import Constructs
 from restmap.compiler.BaseCompiler import BaseCompiler
-from restmap.resolver.ResolutionGraph import ResolutionGraph
+from restmap.orchestrator.OrchestrationGraph import OrchestrationGraph
 from restmap.resolver.nodes.resolvers import ResolverNode
 
 from restmap.compiler.function.FunctionCompiler import FunctionCompiler, FunctionCompilationRequest, FunctionDeployment
@@ -28,7 +28,7 @@ class Compiler(BaseCompiler):
         #TODO Enable the compiler to receive a language compiler to select the type of compilation stack to use
         self._function_compiler = FunctionCompiler(compiler=self)
 
-    def from_orchestration_graph(self, graph: ResolutionGraph) -> List[FunctionDeployment]:
+    def from_orchestration_graph(self, graph: OrchestrationGraph) -> List[FunctionDeployment]:
         """
         Traverses the resolution graph to compile the required components
         using the logic implemented in the resource Compiler classes.
@@ -66,7 +66,7 @@ class Compiler(BaseCompiler):
         self.heads.append(head)
         return head
 
-    def _compile_endpoint(self, graph: ResolutionGraph) -> List[FunctionDeployment]:
+    def _compile_endpoint(self, graph: OrchestrationGraph) -> List[FunctionDeployment]:
       """
       Compile the endpoint schema
       * All resolvers need to be compiled to executable functionsSD The dependencies between the functions need to be passed to the orchestrator

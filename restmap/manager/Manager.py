@@ -81,7 +81,7 @@ class Manager:
         # Store updated version
         self._state.state = resolution_graph
         # Computes the dependencies during execution
-        orchestration_graph = self._orchestrator.orchestrate(deployables=compiled_deployables, resolution_graph=resolution_graph)
+        orchestration_graph = self._orchestrator.orchestrate(resolution_graph=resolution_graph)
         # Compile the deployable assets
         compiled_deployables = self._compiler.from_orchestration_graph(orchestration_graph)
         # Create the stack in the IaC Executor

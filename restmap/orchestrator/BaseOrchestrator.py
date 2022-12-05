@@ -6,11 +6,15 @@ from typing import List, Union, Any
 
 from restmap.compiler.function.FunctionCompiler import FunctionDeployment
 from restmap.resolver.ResolutionGraph import ResolutionGraph
+from restmap.resolver.nodes.EndpointNode import BaseURLNode 
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 from .OrchestrationGraph import OrchestrationGraph, OrchestrationNode, EdgeParams
 
 
-class BaseOrchestrator(ABC):
+class AbstractOrchestrator(ABC):
+    pass
+
+class BaseOrchestrator:
     """
     The orchestrator schedules the execution of functions, 
     maintains their dependencies across runs and ensures
@@ -35,21 +39,30 @@ class BaseOrchestrator(ABC):
         self.graph = OrchestrationGraph(is_directed=True)
         self.executor = executor
 
-
     # PUBLIC API_______________
-    def orchestrate(self, deployables: List[FunctionDeployment], resolution_graph: ResolutionGraph) -> OrchestrationGraph:
+    def orchestrate(self, resolution_graph: ResolutionGraph) -> OrchestrationGraph:
         """
         Resolves the dependencies between the deployables and 
         computes an execution graph that can be executed by any 
         Executor instance against the chosen backend.
         """
-        from restmap.resolver.nodes. EndpointNode import RelativeURLNode
+        from restmap.resolver.nodes.EndpointNode import RelativeURLNode
+
         # TODO Place all executable functions on the graph
+        # TODO Manage list of executables in the template schema in a single source of truth configuration. Currently this info is duplicated in the framework
+        # Only Relative URL Endpoints are executables
         orch_nodes = [OrchestrationNode(
-            construct=deployable, 
-            name=deployable.uid,
-            ) for deployable in deployables]
+            construct=endpoint, 
+            name=name
+            ) for name, endpoint in resolution_graph._endpoints.items() if not isinstance(endpoint, BaseURLNode)]
+        
+        # All resolvers are executables
+        orch_nodes.extend([OrchestrationNode(
+            construct=resolver, 
+            name=name
+            ) for name, resolver in resolution_graph._resolvers.items()])
         self.graph.insert(orch_nodes)
+
         # TODO Create edges between nodes if they are dependent
         # TODO Find a way to generalize this logic to handle various template types
         for name, resolver in resolution_graph._resolvers.items():
@@ -60,13 +73,12 @@ class BaseOrchestrator(ABC):
         
         # Manages nested dependencies amongst endpoints
         for name, endpoint in resolution_graph._endpoints.items():
-            if not isinstance(endpoint, RelativeURLNode):
-                continue
-            self.graph.add_edge(endpoint.base.name, name)
-            # Sets a dependency on all resolvers resolving the parameters used in the endpoint
-            for param in endpoint.params:
-                # TODO Potentially add parametrization on the edge to enable iteration over parameter space
-                self.graph.add_edge(param.resolver.name, name)
+            if isinstance(endpoint, RelativeURLNode):
+                # self.graph.add_edge(endpoint., name)
+                # Sets a dependency on all resolvers resolving the parameters used in the endpoint
+                for param in endpoint.params:
+                    # TODO Potentially add parametrization on the edge to enable iteration over parameter space
+                    self.graph.add_edge(param.resolver.name, name)
 
         return self.graph
 
@@ -148,7 +160,6 @@ class BaseOrchestrator(ABC):
         """
         self._deploy_to_executor(graph)
 
-    @abstractmethod
     def _deploy_to_executor(self, graph: OrchestrationGraph):
         """
         Implements the logic to deploy the common strucure of the 
@@ -161,3 +172,6 @@ class BaseOrchestrator(ABC):
         implemented in the associated Executor
         """
         raise NotImplementedError
+
+# Interface Registration
+AbstractBaseExecutor.register(BaseOrchestrator)

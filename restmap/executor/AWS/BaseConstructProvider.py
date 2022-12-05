@@ -10,16 +10,27 @@ class BaseConstructProvider:
         self._constructs = {}
         self._construct_in_scope = None
     
-    def _register_construct(self, name: str, construct):
-        """Cache a construct locally"""
-        if name not in self._constructs:
-            self._constructs[name] = construct 
 
     def get_active_construct(self):
         return self._construct_in_scope
 
     def use(self, construct: str) -> 'BaseConstructProvider':
         return ConstructContextManager(provider=self, construct=construct)
+
+    def compile(self):
+        """
+        Compiles the configuration into code after changes are applied.
+
+        Enables already compiled functions to be changed dynamically when
+        required as part of the orchestration process. 
+        """
+        construct = self.get_active_construct()
+        # Trigger comilation process again
+
+    def _register_construct(self, name: str, construct):
+        """Cache a construct locally"""
+        if name not in self._constructs:
+            self._constructs[name] = construct 
 
     def _select_construct(self, construct):
         self._construct_in_scope = construct
