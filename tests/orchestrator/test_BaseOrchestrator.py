@@ -140,7 +140,6 @@ class TestOrchestrator:
         func2.uid = "SomethingElse"
         orchestrator.register(function)
         orchestrator.register(func2)
-        orchestrator.add_trigger(function.uid, 'success', func2.uid)
         assert orchestrator.graph.edges[(function.uid, func2.uid)]
 
     def test_orchestrate(self, template_path: Path, manager: Manager):

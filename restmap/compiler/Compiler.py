@@ -30,7 +30,7 @@ class Compiler(BaseCompiler):
 
     def from_orchestration_graph(self, graph: OrchestrationGraph) -> List[FunctionDeployment]:
         """
-        Traverses the resolution graph to compile the required components
+        Traverses the orchestration graph to compile the required components
         using the logic implemented in the resource Compiler classes.
 
         Each construct compiler is maintaining the required node types
@@ -39,14 +39,18 @@ class Compiler(BaseCompiler):
         on the ResolutionGraph components.
         """
         #TODO Resolver must parse kind:str to Construct Enum when resolving the ResolutionGraph 
-        kind_switch: dict[Constructs, BaseCompiler] = {
-            Constructs.Endpoint : self._compile_endpoint,
-            Constructs.Resolver : self._compile_resolver,
-        }
+        # kind_switch: dict[Any, BaseCompiler] = {
+            # : self._compile_endpoint,
+            # : self._compile_resolver,
+        # }
         
+        deployables = []
         # Routes the template to the compilation method based on kind
-        compilation_result = kind_switch[graph.kind](graph)
-        return compilation_result
+        for node in graph.nodes.values():
+          head = self._spawn_head()
+          compiled_deployable = self._function_compiler.compile(head, node.construct) 
+          deployables.append(compiled_deployable)
+        return deployables
       
     def _spawn_head(self) -> CompilerNode:
         """

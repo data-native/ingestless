@@ -56,8 +56,8 @@ from dataclasses import dataclass
 
 from restmap.resolver.ResolutionGraph import ResolutionGraph
 from restmap.compiler.function import HandlerNode, HeaderNode, RequestNode, BodyParserNode
-from restmap.compiler.BaseCompiler import BaseCompiler
-from restmap.compiler.CompilerNode import CompilerNode
+from restmap.compiler.BaseCompiler import BaseCompiler, CompilerNode
+from restmap.resolver.nodes import BaseNode, EndpointNode, ParamNode
 from restmap.compiler.function.AuthenticatorNode import AuthenticatorNode
 from restmap.compiler.function.ResponseHandlerNode import ResponseHandlerNode
 
@@ -139,7 +139,7 @@ class FunctionCompiler(BaseCompiler):
         ) -> None:
         super().__init__(compilation_dir)
 
-    def compile(self, head: CompilerNode, function: ResolutionGraph) -> FunctionDeployment:
+    def compile(self, head: CompilerNode, function: BaseNode) -> FunctionDeployment:
         """
         Assumes a loaded resolution graph that was transformed into the compilation graph
 
@@ -151,7 +151,7 @@ class FunctionCompiler(BaseCompiler):
         """
         # TODO Elaborate the validation logic to handle optional or missing elements in the construct definition
         expected_nodes = [HeaderNode.HeaderNode, HandlerNode.HandlerNode, BodyParserNode.BodyParserNode, ResponseHandlerNode]
-        assert all([node in head._children] for node in expected_nodes)
+        # assert all([node in head._children] for node in expected_nodes)
 
         code = ""
         # TODO Resolve the graph for all functions
@@ -182,7 +182,7 @@ class FunctionCompiler(BaseCompiler):
             code_location=code_location
         )
 
-    def _compile_header(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
+    def _compile_header(self, parent: CompilerNode, node: BaseNode) -> str:
         """
         Extracts required attributes from ResolutionGraph and 
         instantiates the HeaderNode.
@@ -213,7 +213,7 @@ class FunctionCompiler(BaseCompiler):
         # Conditionally append authenticator
         return header.compile_code()
 
-    def _compile_request(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
+    def _compile_request(self, parent: CompilerNode, node: BaseNode) -> str:
         """
         Compiles the request to be executed against the target endpoint
         """
@@ -223,7 +223,7 @@ class FunctionCompiler(BaseCompiler):
         # Compile the configured request handler to code and return code string
         return request.compile_code()
         
-    def _compile_response(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
+    def _compile_response(self, parent: CompilerNode, node: BaseNode) -> str:
         """
         Compiles the code handling the response object generation
         from the serverless function
@@ -233,7 +233,7 @@ class FunctionCompiler(BaseCompiler):
         
         return response.compile_code()
 
-    def _compile_body(self, parent: CompilerNode, graph: ResolutionGraph) -> str:
+    def _compile_body(self, parent: CompilerNode, node: BaseNode) -> str:
         """
         Compiles the code logic to handle the core logic in the function
         

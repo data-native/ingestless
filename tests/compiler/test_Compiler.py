@@ -34,14 +34,14 @@ class TestCompiler:
     are managed through this Compiler class.
     """
 
-    def test_from_resolution_graph_endpoint(self, manager: Manager, compiler: Compiler):
-        template = manager._parser.load('./ingestless/tests/restmap/assets/complex_endpoint.yml')
+    def test_from_orchestration_graph_endpoint(self, template_path:Path, manager: Manager, compiler: Compiler):
+        template = manager._parser.load(template_path)
         resolution_graph = manager._resolver.resolve(template)
-        deployables = compiler.from_orchestration_graph(resolution_graph)
-        assert all([isinstance(d, FunctionDeployment) for d in deployables])
+        orchestration_graph = manager._orchestrator.orchestrate(resolution_graph)
+        deployables = compiler.from_orchestration_graph(orchestration_graph)
+        assert all([isinstance(d, FunctionDeployment) for d in deployables]), "Compiling a function must return a DeployableFunction instance"
         # TODO Generalize to all types of supported entities
         for deployment in deployables:
-            assert isinstance(deployment, FunctionDeployment), "Compiling a function must return a DeployableFunction instance"
             assert isinstance(deployment.code, str), "Compiled code must be returned as a string"
             assert isinstance(deployment.params, DeploymentParams), "Deployment Parameters must be compiled to a DeploymentParams instance"
         # Assert a python file is generated in the target src location

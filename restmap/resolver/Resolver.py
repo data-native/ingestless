@@ -91,41 +91,6 @@ class Resolver:
         return self.graph 
 
     # TODO This must be rewritten to actually compile a full resolution of all attributes
-    def _old_resolve(self, template: TemplateSchema) -> ResolutionGraph:
-        """
-        Generate a resolved graph representation of the dependency
-        parse tree.
-
-        The resolution creates:
-        * An entry for each execution step
-        * Looping contracts holding a compute step and associated attributes
-        * Resolver nodes that when executed will read and provide a certain attribute
-        #TODO: Ensure looping functionality can be compiled based on attributes and classes
-        """
-
-        self.graph.kind = template.kind
-        # Add all resolvers
-        for resolver in template.config.resolvers:
-            resolver_template = template.config.resolvers[resolver]
-            if resolver_template['kind'] == 'EndpointResolver':
-                resolver_template['endpoint'] = template.config.endpoints[resolver]
-            resolver_node = self._resolve_resolver(name=resolver, resolver=resolver_template)
-            self.graph.add_resolver(resolver=resolver_node)
-
-        # Add all parameters
-        for param in template.config.params:
-            param_template = template.config.params[param]
-            param_node = self._resolve_param(param_template)
-            self.graph.add_parameter(param=param_node)
-        
-        # Add all endpoints utilizing the resolver and parameter node references
-        for endpoint in template.config.endpoints:
-            for name, attributes in endpoint.items():
-                endpoint_node = self._resolve_endpoint(name, attributes)
-                self.graph.add_endpoint(endpoint_node)
-        
-        return self.graph
-    
     def _resolve_endpoint(self, name: str,  endpoint: dict) -> EndpointNode.EndpointNode:
         """
         Resolve the links mentioned in the resolutionTemplate.
