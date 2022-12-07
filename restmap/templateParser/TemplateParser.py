@@ -30,6 +30,7 @@ class ConfigurationDict:
     endpoints: dict
     params: dict 
     resolvers: dict
+    outputs: dict
 @dataclass
 class TemplateSchema:
     """

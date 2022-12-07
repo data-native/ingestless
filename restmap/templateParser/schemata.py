@@ -10,6 +10,7 @@ TemplateSchema = {
         "kind": {"type": "string"},
         "metadata": {"type": "object"},
         "config": {"type": "object"},
+        "outputs": {"type": "object"}
     },
     "required": ["version", "kind", "config"]
 }
@@ -47,6 +48,13 @@ ConfigSchema = {
             },
         "params": {"type": "object"},
         "resolvers": {"type": "object"},
+        "outputs": {
+            "type": "object",
+            "properties":{
+                "kind":{"type": "string"},
+                "provider": {"type": "string"},
+            }
+            }
     },
     "required": ["endpoints", "params", "resolvers"]
 }
@@ -77,6 +85,7 @@ ResolverSchema = {
         "name" : {"type": "string"},
     },
 }
+
 
 # Mapping dictionary to facilitate resolution of schema to keys
 schema_mapping = {

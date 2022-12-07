@@ -3,7 +3,7 @@
 """
 from typing import Dict
 from enums import Constructs
-from restmap.resolver.nodes import EndpointNode, ParamNode, BaseNode
+from restmap.resolver.nodes import EndpointNode, ParamNode, BaseNode, OutputNode
 from restmap.resolver.nodes.resolvers import ResolverNode
 
 class ResolutionGraph:
@@ -23,6 +23,7 @@ class ResolutionGraph:
         self._resolvers: Dict[str, ResolverNode.ResolverNode] = {}
         self._params: Dict[str, ParamNode.ParamNode] = {}
         self._endpoints: Dict[str, EndpointNode.EndpointNode] = {}
+        self._outputs: Dict[str, OutputNode.OutputNode] = {}
 
     # PROPERTIES _________
     @property

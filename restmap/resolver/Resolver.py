@@ -41,6 +41,7 @@ class Resolver:
             'endpoint': [name for endpoint in template.config.endpoints for name in endpoint.keys()] ,
             'param': [param for param in template.config.params.keys()],
             'resolver': [resolver for resolver in template.config.resolvers.keys()],
+            'output': [output for output in template.config.outputs.keys()]
         }
         # Iterates until all dependencies where met
         repetition = 0
