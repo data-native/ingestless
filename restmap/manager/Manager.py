@@ -37,8 +37,8 @@ class Manager:
 
     def __init__(self, executor: str, name: str) -> None:
 
-        self._parser = TemplateParser()
         self._state = State()
+        self._parser = TemplateParser()
         self._resolver = Resolver()
         #TODO Extend to handle multiple compilation processes
         self._compiler= Compiler()

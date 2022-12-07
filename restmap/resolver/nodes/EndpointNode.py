@@ -18,6 +18,7 @@ RelativeURLNode: Builds up on the BaseURLNode endpoint configuration to execute
 
 """
 from dataclasses import dataclass, field
+from pathlib import Path
 from .BaseNode import BaseNode
 from restmap.resolver.nodes.ParamNode import ParamNode
 
@@ -37,7 +38,6 @@ class EndpointNode(_EndpointNodeDefaults, BaseNode, _EndpointNodeBase):
 
     def resolve(self, provider):
         raise NotImplementedError
-    
     
     @property
     def format_params(self) -> dict[str, str]:
@@ -60,9 +60,7 @@ class BaseURLNode(_BaseURLNodeDefaults, EndpointNode, _BaseURLNodeBase):
     A configuration url base endpoint that is not executed by itself
     but carries configuration that is reused across RelativeURLNodes.
     """
-    def get_url(self):
-        raise NotImplementedError
-        # return self.url.format(**self.params)
+    pass
 
 @dataclass 
 class _RelativeURLNodeBase:
@@ -77,5 +75,8 @@ class RelativeURLNode(_RelativeURLNodeDefaults, EndpointNode, _RelativeURLNodeBa
     A configuration url base endpoint that is not executed by itself
     but carries configuration that is reused across RelativeURLNodes.
     """
-    def get_url(self):
-        return self.base.get_url() + self.relative.format(**self.format_params)
+
+    @property
+    def url(self):
+        # TODO Maybe here needs to be a prepartion for the parameter integration 
+        return Path(self.base.url) / self.relative

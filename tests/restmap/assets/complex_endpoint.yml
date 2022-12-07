@@ -19,12 +19,20 @@ config:
             base: baseurl
             relative: /scope/{userId}
             params:
-                 - userId:
+                - userId:
                     param: userId
+            output:
+                sink: datalake
+                relativepath: /scope 
+
         - userIdEndpoint:
             kind: relativeurl
             base: baseurl
             relative: /users/
+    outputs:
+        datalake:
+           kind: blob
+           provider: bucketname
     params:
         reservationOrderId:
             name: reservationOrderId
@@ -59,7 +67,6 @@ config:
                 name: OtherTable
                 col: ['name'] 
 
-    
 
 
     

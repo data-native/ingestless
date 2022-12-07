@@ -10,18 +10,18 @@ class CompilerNode:
     """
     _env: Environment
     _template: str
-    _parent: 'CompilerNode'
-    _children: List['CompilerNode']
-    _code: str = ""
+    parent: 'CompilerNode'
+    children: List['CompilerNode']
+    code: str = ""
     _is_enclosing: bool = False
 
     def child(self, node: 'CompilerNode'):
-        self._children.append(node)
+        self.children.append(node)
         self._is_enclosing = True
 
     def sibbling(self, node: 'CompilerNode'):
-        self._parent.child(node)
-        self._parent._is_enclosing = True
+        self.parent.child(node)
+        self.parent._is_enclosing = True
     
     def compile(self, node: 'CompilerNode'=None) -> str:
         """
@@ -37,16 +37,16 @@ class CompilerNode:
         if node._is_enclosing:
             # Collect return from component registration
             # Needs to first compile its children before it can return its final string
-            for child in node._children:
-                self._code += child.compile_code()
-                self._children = [node for node in self._children if node != child]
-        self._code += self.compile_code()
-        return self._code 
+            for child in node.children:
+                self.code += child.compile_code()
+                self.children = [node for node in self.children if node != child]
+        self.code += self.compile_code()
+        return self.code 
 
     def _render_template(self, arg_dict: dict=None) -> str:
         """
         Renders the code template
-        """
+       """
         arg_dict = arg_dict or {k: v for k,v in self.__dict__.items() if not k.startswith('_')}
         # TODO Enhace passing of an instance that validated the required dict keys are present
         # assert isinstance(arg_dict, dict)
@@ -55,6 +55,19 @@ class CompilerNode:
 
     def compile_code(self):
         """
-        Implements the code compilation for that specific node
+        Compile the code template given the parameters
+        set on the node instance. 
+        """
+        # Ensure validity of the configuration
+        self._assert_valid_config()
+        # Compile template wth parameters
+        param_dict = {k: self.__dict__[k] for k in self.__dict__.keys() if not k.startswith('_')} 
+        return self._render_template(param_dict)
+
+    def _assert_valid_config(self) -> bool:
+        """
+        Checks the presence of configuration patters on the compiler
+        node. Contains the business logi of configuration patterns that are 
+        enabled and reasonable on the code element.
         """
         raise NotImplementedError

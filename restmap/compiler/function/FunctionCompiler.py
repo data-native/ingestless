@@ -55,12 +55,13 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from restmap.resolver.ResolutionGraph import ResolutionGraph
-from restmap.compiler.function import HandlerNode, HeaderNode, RequestNode, BodyParserNode
+from restmap.compiler.function import RequestHandlerNode, HeaderNode, BodyParserNode
 from restmap.compiler.BaseCompiler import BaseCompiler, CompilerNode
 from restmap.resolver.nodes import BaseNode, EndpointNode, ParamNode
 from restmap.compiler.function.AuthenticatorNode import AuthenticatorNode
 from restmap.compiler.function.ResponseHandlerNode import ResponseHandlerNode
-
+from restmap.compiler.function.AuthenticatorNode import CredentialsAuthenticator
+from restmap.compiler.function.LoaderNode import LoaderNode
 
 # FUNCTION_COMPILER__________________________
 @dataclass 
@@ -135,9 +136,9 @@ class FunctionCompiler(BaseCompiler):
         compiler: BaseCompiler, #Actually the parent Compiler. Used to access the other compiler to request resource allocation dynamically
         compilation_dir: str='./ingestless/restmap/src', 
         language:str="Python@3.9",
-
         ) -> None:
         super().__init__(compilation_dir)
+        self._response_variable = 'output' # TODO Expose this glue variable name for parametrization
 
     def compile(self, head: CompilerNode, function: BaseNode) -> FunctionDeployment:
         """
@@ -150,16 +151,24 @@ class FunctionCompiler(BaseCompiler):
         return: Function object that can be deployed through the backend provider
         """
         # TODO Elaborate the validation logic to handle optional or missing elements in the construct definition
-        expected_nodes = [HeaderNode.HeaderNode, HandlerNode.HandlerNode, BodyParserNode.BodyParserNode, ResponseHandlerNode]
+        expected_nodes = [HeaderNode.HeaderNode, RequestHandlerNode.RequestHandlerNode, BodyParserNode.BodyParserNode, ResponseHandlerNode]
         # assert all([node in head._children] for node in expected_nodes)
 
-        code = ""
         # TODO Resolve the graph for all functions
+        # Conditionally add elements to the function that the compilations steps can reference 
+        if function.authenticator:
+            self.authenticator(head) 
+        if function.output:
+            self.output(head)
+
+        
+        # TODO Refactor to nested template computation instead of string concatenation 
+        code = ""
         # TODO Handle the fact if not all elements are valid
         code += self._compile_header(head, function)
-        code += self._compile_request(head, function)
-        code += self._compile_body(head, function)
-        code += self._compile_response(head, function) 
+        code += self._compile_request_handler(head, function)
+        code += self._compile_function_body(head, function)
+        code += self._compile_response_handler(head, function) 
 
         # Passes the completed compilation graph to a specific compiler plugin
         # allowing specific languages and framework combinations to implement the 
@@ -182,7 +191,13 @@ class FunctionCompiler(BaseCompiler):
             code_location=code_location
         )
 
-    def _compile_header(self, parent: CompilerNode, node: BaseNode) -> str:
+    def _compile_header(self, 
+        parent: CompilerNode, 
+        node: BaseNode,
+        child_template:bool=False,
+        parent_template:str='',
+        child_block:str=''
+    ) -> str:
         """
         Extracts required attributes from ResolutionGraph and 
         instantiates the HeaderNode.
@@ -209,21 +224,40 @@ class FunctionCompiler(BaseCompiler):
             }
         }
         # Instantiate the node
-        header = self.header(parent=parent)
+        header = self.header(
+            parent=parent, 
+            params=param_dict
+            )
         # Conditionally append authenticator
-        return header.compile_code()
+        header.child(self.authenticator(token_refresh=True))
+        # TODO Agent randomization. 
+        header.randomize_agents()
+        # TODO Encrypt traffic
+        header.encrypt_traffic()
 
-    def _compile_request(self, parent: CompilerNode, node: BaseNode) -> str:
+        return header.compile_code(node=node)
+
+    def _compile_request_handler(self, 
+        parent: CompilerNode, 
+        node: BaseNode,
+    ) -> str:
         """
         Compiles the request to be executed against the target endpoint
         """
-        request = self.request(parent=parent)
-        # Generate all elements to be nested in the request object based on set parameters
+        request = self.request_handler(
+            parent=parent, 
+            method='get',
+            response_type='text'
+        )
+        # TODO Set the if condition business logic here
+        # TODO IP randomization
+        request.rotate_ips()
+        # 
 
         # Compile the configured request handler to code and return code string
         return request.compile_code()
         
-    def _compile_response(self, parent: CompilerNode, node: BaseNode) -> str:
+    def _compile_response_handler(self, parent: CompilerNode, node: BaseNode) -> str:
         """
         Compiles the code handling the response object generation
         from the serverless function
@@ -233,7 +267,7 @@ class FunctionCompiler(BaseCompiler):
         
         return response.compile_code()
 
-    def _compile_body(self, parent: CompilerNode, node: BaseNode) -> str:
+    def _compile_function_body(self, parent: CompilerNode, node: BaseNode) -> str:
         """
         Compiles the code logic to handle the core logic in the function
         
@@ -254,10 +288,37 @@ class FunctionCompiler(BaseCompiler):
         """
         return {}
 
+    # NODES__________________
+    def output(self,
+        parent: CompilerNode,
+        params: dict,
+        template:str="functions/aws/header.jinja", # TODO Consider if a template for the authenticator is actually required, likely it will just carry values for the compilation nodes
+    ) -> LoaderNode.LoaderNode:
+        """
+        Data output configuration for the function to a selected
+        storage system such as a database, table, bucket, queue, topic.
+        """
+        # TODO Function output configuration must be parsed
+        # Where to store to
+        # What connection parameters to use
+        # Parameters for the output process
+        # 
+
+
+
+        loader = LoaderNode(
+            _env=self.env,
+            _template=template,
+            parent=None,
+            children=[],
+            params=params,
+        )
+        self._append_to_parent(parent, loader)
+
     def header(self, 
         parent: CompilerNode,
+        params: dict,
         template:str="functions/aws/header.jinja",
-        **kwargs
     ) -> HeaderNode.HeaderNode:
         """
         Compiles the HTTP header code
@@ -268,11 +329,11 @@ class FunctionCompiler(BaseCompiler):
         * #TODO Extend list of supported header configurations here .....
         """
         header = HeaderNode.HeaderNode(
-            _template=template,
             _env=self.env,
-            _parent=None,
-            _children=[],
-            **kwargs
+            _template=template,
+            parent=None,
+            children=[],
+            params=params
             )
         self._append_to_parent(parent, header)
         return header
@@ -303,19 +364,26 @@ class FunctionCompiler(BaseCompiler):
     # TODO: Remove and replace with build in jinja function
     
     #TODO
-    def request(self, 
+    def request_handler(self, 
         parent: CompilerNode, 
+        method: str,
+        response_type: str,
         template: str="functions/aws/request_handler.jinja",
-        ) -> HandlerNode.HandlerNode:
+        ) -> RequestHandlerNode.RequestHandlerNode:
         """
         Create the compiled handler Node
         """
-        handler = HandlerNode.HandlerNode(
+        handler = RequestHandlerNode.RequestHandlerNode(
                 _template=template, 
                 _env=self.env, 
-                _parent=None, 
-                _children=[], 
-                _code='Handler Code\n')
+                parent=None, 
+                children=[], 
+                code='Handler Code\n',
+                method=method,
+                response_type=response_type,
+                response_status='status',
+                response_variable=self._response_variable,
+                )
         self._append_to_parent(parent, handler)
         return handler
     
@@ -326,8 +394,8 @@ class FunctionCompiler(BaseCompiler):
         parser = BodyParserNode.BodyParserNode(
             _template=template,
             _env=self.env, 
-            _parent=None,
-            _children=[]
+            parent=None,
+            children=[]
             )
         self._append_to_parent(parent, parser)
         return parser
@@ -346,14 +414,15 @@ class FunctionCompiler(BaseCompiler):
         response_handler = ResponseHandlerNode(
             _template=template,
             _env=self.env, 
-            _parent=None, 
-            _children=[]
+            parent=None, 
+            children=[]
         )
         self._append_to_parent(parent, response_handler)
         return response_handler
     
     def authenticator(self,
-        parent: CompilerNode,
+        kind: str,
+        parent: CompilerNode=None,
         template:str="functions/aws/authenticator.jinja",
     ) -> AuthenticatorNode:
         """
@@ -366,15 +435,17 @@ class FunctionCompiler(BaseCompiler):
         OAuth 2.0:
         OpenIDConnect:
         """
-        authenticator = AuthenticatorNode(
+        kind_switch = {
+            'NameAndPassword': CredentialsAuthenticator,
+        }
+        authenticator = kind_switch[kind](
             _template=template,
             _env=self.env,
-            _parent=None,
-            _children=[]
+            parent=parent,
+            children=[]
         )
         self._append_to_parent(parent, authenticator)
         return authenticator
-        
 
     def _save_to_file(self, name:str, doc: str):
         """Output the compilation result to file location"""

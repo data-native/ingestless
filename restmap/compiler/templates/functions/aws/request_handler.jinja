@@ -1,1 +1,27 @@
-response = requests.{{REST_METHOD}}({{ METHOD_PARMS }})
+{#
+    Uses the requests library to handle all common REST verbs
+    with optional parametrization of the calls
+
+    Interaction parameter:
+    ----------------------
+    @response_variable: The variable name used to chain the calls within 
+    the compiled code into each other
+    @response_status: The name of the variable holding the status code for the response
+#}
+{% if method.lower == 'get' %}
+r = request.get({{ url }}, auth={{ auth }}, {% if response_type == 'raw_stream' %} stream=True {% endif %})
+{% elif method.lower == 'post' %}
+r = request.post({{ url }}, data={{ payload }} )
+{% endif %}
+{{ response_status }} = r.status_code
+
+# Handle response type conversion
+{% if response_type == 'text' %}
+{{ response_variable }} = r.text
+{% elif response_type == 'binary' %}
+{{ response_variable}} = r
+{% elif reponse_variable == 'json' %}
+{{ response_variable }} = r.json()
+{% elif response_type == 'raw_stream' %}
+{{ response_variable }} = r.json()
+{% endif %}

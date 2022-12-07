@@ -1,1 +1,40 @@
-return {{ response }}
+{#
+    A standard response handler template that optionally 
+    attempts response validation on the data before 
+    serializing the reponse to a chosen return type and 
+    sending a REST response
+    
+    Potential extensions:
+    * Provide file response 
+    * Provide 
+#}
+{% if response_check %}
+success_flag = {{ response_check }}
+{% else %}
+success_flag = True
+{% endif %}
+
+if {{ success_flag }}:
+
+    {% if return_type == 'json' %}
+    body = json.dumps({{ return_variable }})
+    {% else %}
+    body = json.dumps({{ return_variable }})
+    {% endif %}
+    response = {
+        'statusCode': {{ successCode }},
+        'body': body 
+    }
+else:
+    error_response_switch = {
+        5: "Server side error",
+        4: "Client error",
+        3: "Redirection",
+    }
+    error_response = f"{error_response_switch[int(str(error_code)[0])]}"
+    response = {
+        'statusCode': {{ errorCode }},
+        'error': error_response
+    }
+
+return response  

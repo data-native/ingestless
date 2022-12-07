@@ -62,9 +62,9 @@ class Compiler(BaseCompiler):
         head = CompilerNode(
             _env = self.env,
             _template = '',
-            _parent = None,
-            _children = [], 
-            _code= '',
+            parent = None,
+            children = [], 
+            code= '',
             _is_enclosing = True
         )
         self.heads.append(head)
