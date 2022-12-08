@@ -12,7 +12,7 @@ class BaseConstructProvider:
     
 
     def get_active_construct(self):
-        return self._construct_in_scope
+        return self._construct_in_scope.construct
 
     def use(self, construct: str) -> 'BaseConstructProvider':
         return ConstructContextManager(provider=self, construct=construct)
@@ -24,7 +24,7 @@ class BaseConstructProvider:
         Enables already compiled functions to be changed dynamically when
         required as part of the orchestration process. 
         """
-        construct = self.get_active_construct()
+        construct = self._construct_in_scope
         # Trigger comilation process again
 
     def _register_construct(self, name: str, construct):
@@ -49,8 +49,8 @@ class ConstructContextManager:
 
     def __enter__(self) -> BaseConstructProvider:
         try:
-            topic = self.provider._constructs[self.selected_construct]
-            self.provider._select_construct(topic)
+            construct = self.provider._constructs[self.selected_construct]
+            self.provider._select_construct(construct)
             return self.provider 
         except KeyError:
             raise KeyError(f"No function {self.selected_construct} registered. If configured, register the function with the Provider first.") 

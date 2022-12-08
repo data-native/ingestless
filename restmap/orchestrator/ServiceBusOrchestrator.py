@@ -21,15 +21,18 @@ class ServiceBusOrchestrator(BaseOrchestrator):
     functions. 
     """
     
-    def __init__(self, executor: AbstractBaseExecutor):
-        super().__init__(executor)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
     
     # EXECUTOR INTERACTION____________
     # Intended to separate the basic orchestration logic in the BaseOrchestrator
     # from the changing logic implemented by a specific stack of services in the background
     # this should be implementing abstract classes that define a clearly defined interface
     # so that various plug-ins can be used here
-    def _deploy_to_executor(self, graph: OrchestrationGraph):
+    def _deploy_to_executor(
+        self, 
+        graph: OrchestrationGraph,
+        ):
         """
         Implements the business logic to deploy the orchestration
         graph elements onto the backend
@@ -42,9 +45,10 @@ class ServiceBusOrchestrator(BaseOrchestrator):
         * Each resolution of 
         """
         # For all subgraphs deploy the units
-        for graph in self.subgraphs():
+        for graph in self.subgraphs(graph):
             # Register all executable nodes as functions in the executor 
-            self.executor.Function.register([node.construct for node in graph.nodes.values()])
+            # self.executor.Function.register([node.construct for node in graph.nodes.values()])
+            self.executor.Function.register([node for node in graph.nodes.values()])
             # Create a topic in which to share success execution events across services
             self.executor.Topic.register('execution_success', {})
             # Link up the functions based on the edges using the provider service API to deploy the orchestration onto the backend
@@ -60,15 +64,20 @@ class ServiceBusOrchestrator(BaseOrchestrator):
                         # target is set to be triggered on sns message
                         # TODO The function notifies on success to a topic. This configures the required permissions to publish on the topic and compiles the code for sending out the notification to the channel 
                         # in the function body, causing a likely recompile of the code files
-                        # Allow the function to publish on the topic
+                    # Allow the function to publish on the topic
                         t.grant_publish(f.get_active_construct())
-                        # Recompile the code to publish the status event to the target topic
                         # This configures the event publishing code in the function
-                        msg_params = {
-                            'event_type': 'success',    
-                            'on':['sucess', 'skipped'], # Should publish a success event on both successfull completion and when execution was skipped
-                        }
-                        f.trigger(on='success', source='topic', name='execution_success', args=msg_params)
+                        # Publish to a topic named after the resolved parameter
+                        # So that each service can consume the resolved parameters when they become available 
+                        f.notify(
+                            topic=t, 
+                            synchronous=True, 
+                            on='success', 
+                            params={},
+                            payload=None # TODO Enable to direct the output directly to the notification target
+                        )
+                        # Notification requires changes in the application code, so the funciton code needs to be recompiled to be deployed correctly
+                        # Recompile the code to publish the status event to the target topic
                         # Can be called manually, or be set in the __exit__ function of the context manager
                         f.compile()
                     # Configure target to trigger on received event from start
@@ -76,7 +85,9 @@ class ServiceBusOrchestrator(BaseOrchestrator):
                         # Define the parameters for the event trigger here
                         trigger_params = {
                         }
-                        f.trigger(on='topic', name='execution_success', args=trigger_params)
+                        # Configure the event to trigger on its upstream dependencies
+                        # TODO Ensure that in case of multiple parameters, the system chooses an intermediary storage trigger that knows when to inform based on a list of required resolved parameters
+                        f.trigger(on='success', source='topic', name='execution_success', args=trigger_params)
                         f.compile()
                         # Can be called manually, or be set in the __exit__ function of the context manager
     

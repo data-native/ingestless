@@ -21,6 +21,13 @@ class Resolver:
     -----------------
     * Can query an endpoint with a simple fully specified endpoint
     * Can query an endpoint with a varying url 
+    
+    Extending the class
+    --------------------
+    * Place a resolution section for each newly supported construct in the template
+    * Implement the _parse_xxx function to resolve all mentioned dependencies in the target
+      construct against other constructs
+    * Enjoy dependency resolution
     """
 
     def __init__(self) -> None:
@@ -49,9 +56,9 @@ class Resolver:
         # Iterates until all dependencies where met
         while unresolved['endpoint'] or unresolved['param'] or unresolved['resolver'] or unresolved['output']: 
             num_curr_unresolved = sum([len(list(l)) for l in unresolved.values()])
-            # if num_unresolved_prev > 0:
-                # if num_unresolved_prev == num_curr_unresolved:
-                    # raise ValueError("You have created a circular dependency the system can't resolve. Please check your dependencies.")
+            if num_unresolved_prev > 0:
+                if num_unresolved_prev == num_curr_unresolved:
+                    raise ValueError("You have created a circular dependency the system can't resolve. Please check your dependencies.")
             num_unresolved_prev = num_curr_unresolved
             
             # Try to start with the elements least likely to have dependencies
@@ -165,4 +172,6 @@ class Resolver:
             return self.graph.get('output', name)
         except:
             output['name'] = name
+            # TODO Resolve the additional parameters to be set for the resolution
+            # output['provider']
             return output_switch[output['kind']](**output) 

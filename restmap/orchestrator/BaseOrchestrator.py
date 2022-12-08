@@ -9,7 +9,7 @@ from restmap.resolver.ResolutionGraph import ResolutionGraph
 from restmap.resolver.nodes.EndpointNode import BaseURLNode 
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
 from .OrchestrationGraph import OrchestrationGraph, OrchestrationNode, EdgeParams
-
+from restmap.compiler.BaseCompiler import BaseCompiler
 
 class AbstractOrchestrator(ABC):
     pass
@@ -34,10 +34,14 @@ class BaseOrchestrator:
 
     """
     
-    def __init__(self, executor: AbstractBaseExecutor)-> None:
+    def __init__(self, 
+        executor: AbstractBaseExecutor,
+        compiler: BaseCompiler
+        )-> None:
         self._functions = {str: FunctionDeployment}
         self.graph = OrchestrationGraph(is_directed=True)
         self.executor = executor
+        self.compiler = compiler
 
     # PUBLIC API_______________
     def orchestrate(self, resolution_graph: ResolutionGraph) -> OrchestrationGraph:
@@ -122,21 +126,24 @@ class BaseOrchestrator:
             on=on
             ))
 
-    def subgraphs(self):
+    def subgraphs(
+        self,
+        graph: OrchestrationGraph
+        ):
         """
         Returns the set of disconnected graphs acting as 
         individual, unrelated units of deployment.
         """
-        nodes_without_incoming_edges = {edge[1] for edge in self.graph.edges}
-        independent_nodes = set(self.graph.nodes.keys()).difference(nodes_without_incoming_edges)
+        nodes_without_incoming_edges = {edge[1] for edge in graph.edges}
+        independent_nodes = set(graph.nodes.keys()).difference(nodes_without_incoming_edges)
 
         # ubgraph, export as individual OrchestrationGraph instance
         for node in independent_nodes:
             # TODO Extend this to follow all edges in the subgraph
-            subgraph_edges = {k:v for k,v in self.graph.edges.items() if k[0] == node} 
+            subgraph_edges = {k:v for k,v in graph.edges.items() if k[0] == node} 
             while True:
                 # Append all edges for the edge targets
-                next_degree_nodes = {k:v for k,v in self.graph.edges.items() for child in subgraph_edges.keys() if k[0] in child[1]}
+                next_degree_nodes = {k:v for k,v in graph.edges.items() for child in subgraph_edges.keys() if k[0] in child[1]}
                 # Recurses over all levels of connection in the graph until it finds no more edges to add
                 if not set(next_degree_nodes.keys()).difference(set(subgraph_edges.keys())):
                     break
@@ -144,20 +151,26 @@ class BaseOrchestrator:
 
             # Compute the set of nodes to include in the subgraph
             subgraph_node_keys = {node for tup in subgraph_edges for node in tup}
-            subgraph_nodes = {k:v for k,v in self.graph.nodes.items() if k in subgraph_node_keys}
+            subgraph_nodes = {k:v for k,v in graph.nodes.items() if k in subgraph_node_keys}
             subgraph = OrchestrationGraph(
-                adjs={node: self.graph.adjs[node]}, 
+                adjs={node: graph.adjs[node]}, 
                 edges=subgraph_edges,
                 nodes=subgraph_nodes,
                 )
             yield subgraph
     
-    def deploy(self, graph: OrchestrationGraph, dryrun: bool=False):
+    def deploy(self, deployables: List[FunctionDeployment], graph: OrchestrationGraph, dryrun: bool=False):
         """
         Deploy the orchestrated graph onto the selected backend.
 
         @dryrun: Compiles the IaC backend state, but does not deploy the configuration
         """
+        # Attach the graph nodes to their deployables as constructs
+        graph.nodes = {
+            name: { 
+                'deployment': deployables[name], 
+                'node': node}
+            for name,node in graph.nodes.items()}
         self._deploy_to_executor(graph)
 
     def _deploy_to_executor(self, graph: OrchestrationGraph):

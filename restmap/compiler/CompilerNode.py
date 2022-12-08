@@ -8,20 +8,20 @@ class CompilerNode:
     Inheritance root for the CompilerNodes utilizes
     within the CompilationGraph
     """
-    _env: Environment
-    _template: str
+    env: Environment
+    template: str
     parent: 'CompilerNode'
     children: List['CompilerNode']
     code: str = ""
-    _is_enclosing: bool = False
+    is_enclosing: bool = False
 
     def child(self, node: 'CompilerNode'):
         self.children.append(node)
-        self._is_enclosing = True
+        self.is_enclosing = True
 
     def sibbling(self, node: 'CompilerNode'):
         self.parent.child(node)
-        self.parent._is_enclosing = True
+        self.parent.is_enclosing = True
     
     def compile(self, node: 'CompilerNode'=None) -> str:
         """
@@ -34,7 +34,7 @@ class CompilerNode:
         * A single node should compile itself and return 
         """
         node = node or self
-        if node._is_enclosing:
+        if node.is_enclosing:
             # Collect return from component registration
             # Needs to first compile its children before it can return its final string
             for child in node.children:
@@ -50,7 +50,7 @@ class CompilerNode:
         arg_dict = arg_dict or {k: v for k,v in self.__dict__.items() if not k.startswith('_')}
         # TODO Enhace passing of an instance that validated the required dict keys are present
         # assert isinstance(arg_dict, dict)
-        template = self._env.get_template(self._template)
+        template = self.env.get_template(self.template)
         return template.render(arg_dict)
 
     def compile_code(self):

@@ -11,24 +11,74 @@ AWS Lambda implementation
 """
 from dataclasses import dataclass
 from jsii.errors import JSIIError
-from typing import List, Union
+from typing import List, Union, Dict
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_sns as sns
 import aws_cdk.aws_lambda_event_sources as event_sources
 
 from ..BaseConstructProvider import BaseConstructProvider
-from restmap.compiler.function.FunctionCompiler import FunctionDeployment
+from restmap.compiler.function.FunctionCompiler import FunctionDeployment 
 from restmap.executor.AbstractBaseExecutor import AbstractBaseExecutor
+from restmap.executor.AbstractTopicProvider import AbstractTopicProvider
+from restmap.orchestrator.BaseOrchestrator import OrchestrationNode
+from restmap.compiler.BaseCompiler import BaseCompiler
+from restmap.compiler.function import FunctionCompiler
+
+class BaseConstruct:
+    """
+    Base class for construct items returned from the ConstructProvider
+    compilation process. 
+    """
+    pass
 
 @dataclass
-class Function:
+class Function(BaseConstruct):
     """
     Implements the common abstraction interface for function objects
-    within the framework
-    """
-    provider: BaseConstructProvider
+    within the framework.
 
+    It contains both the native, compiled IaC construct as well as the
+    orginal orchestration node containing the parameters from the configuration.
+
+    This enables the Function to act as a unit of deployment as well
+    as the target for dynamic reconfiguration and recompilation processes.
+    The recompilation is required to ensure that `Orchestrator` classes can dynamically
+    recompile code logic in reaction to orchestration changes.
+    """
+    provider: 'FunctionProvider'
+    construct: lambda_.Function 
+    node: OrchestrationNode
+
+    # All changes to 
+    def write_to(self, sink:BaseConstruct) -> 'Function':
+        """
+        Adds an output target to the function.
+        
+        Adds an output node to the Function
+        -> Result body should be output to the target
+        """
+        # TODO Add the output node to the function graph
+        # Configure the output
+        output_dict = {
+        } 
+        with self.compiler.use(self.node) as f: 
+            f.function.output(
+                 
+                # Parametrize the output node
+            )
+        return self
+    
+    # Move this up to base construct to overwrite 
+    @property
+    def compiler(self) -> FunctionCompiler:
+        return self.provider.executor._compiler
+
+    def _recompile(self):
+        """
+        Recompiles the function code after updating it 
+        """
+        raise NotImplementedError
 class FunctionProvider(BaseConstructProvider):
     """
     Executes the constructs compiled by the Compile stage
@@ -38,43 +88,47 @@ class FunctionProvider(BaseConstructProvider):
     Compiles into AWS native CloudFormation stacks.
     """
 
-    def __init__(self, executor: AbstractBaseExecutor, stack: cdk.Stack) -> None:
+    def __init__(self, 
+        executor: AbstractBaseExecutor, 
+        stack: cdk.Stack) -> None:
         super().__init__(stack)
         self.executor = executor
 
     def register(self, 
-        function: Union[str, FunctionDeployment, List[FunctionDeployment]]) -> 'FunctionProvider':
+        functions: Union[str, dict, List[dict]]
+        ) -> 'FunctionProvider':
         """
         Register one or more functions based on their specification
         """
-        if isinstance(function, str):
+        if isinstance(functions, str):
             # Tries a retrieval of an existing function
-            self._select_construct(function)
+            self._select_construct(functions)
             return self
 
         # Attempt registration of the new functions
         # TODO Extend the parametrization 
-        if not isinstance(function, list):
-            function = [function]
+        if not isinstance(functions, list):
+            functions = [functions]
             # Manage the case that the  
         func_objs = []
-        for func_conf in function:
+        for func_conf in functions:
             try:
-                func_obj = self._compile(function=func_conf)
-                func_objs.append(func_obj)
-                self._constructs[func_conf.uid] = func_obj
+                function_inst = self._compile(func_conf)
+                func_objs.append(function_inst)
+                self._constructs[function_inst.node.name] = function_inst
             except JSIIError:
-                print(f"Construct {func_conf.uid} already present in the stack.")
+                print(f"Construct {func_conf.construct.uid} already present in the stack.")
                 # return Topic(provider=self, topic=self._constructs[name])  
         return self
 
     # TODO Abstract the return object to be able to pass any kind of Serverless Function instead of just an AWS lambda SDK instance
     def notify(self, 
-        target: str, 
-        params: dict, 
+        topic: Union[str, AbstractTopicProvider], 
+        params: dict = {},
         synchronous:bool=True,
         on:str='success',
-        ) -> 'Function':
+        payload:Dict ={},
+        ) -> 'FunctionProvider':
         """
         Chains the given functions execution to the previous
         execution of the other function. 
@@ -82,18 +136,22 @@ class FunctionProvider(BaseConstructProvider):
         Can optionally set the list of execution outcome statuses
         to trigger on. By default only triggers on successful execution.
         """
-        #TODO Implement synch and asynch trigger mechanism
         # Ensure that a construct is set
         self._ensure_construct_scope()
-        current = self.get_active_construct()
-        try:
-            target = self._constructs[target]
-        except KeyError:
-            raise KeyError(f"No funciton {target} registered in the system. Run `register` on the function prior to an scheduling attempt.")
-
-        # Set the trigger on the target fuction to react to the chosen topic
-        # request a new topic named after the function target, so that any other function can read from this
-        # TODO Can likely be optimized to use build in filter on a shared "successfull execution" topic based on parameters (COST REDUCTION OPTION)
+        function = self._construct_in_scope
+        # Retrieve the target topic to get the details if passed by name string
+        if isinstance(topic, str):
+            try:
+                topic = self._constructs[topic]
+            except KeyError:
+                raise KeyError(f"No topic {topic} registered in the system. Run `register` on the function prior to an scheduling attempt.")
+        # Configure publication to the topic
+        topic: AbstractTopicProvider = topic
+        # TODO Find a way to place the attributes on the orchestration_graph 
+        # Instruct the function to output to the target topic
+        function.write_to(
+            sink=topic
+        )
         return self
     
     def trigger(
@@ -102,7 +160,7 @@ class FunctionProvider(BaseConstructProvider):
         source: str,
         name: str,
         args: dict         
-    ):
+    ) -> 'FunctionProvider':
         """
         Configures the function to trigger on an event_source.
         @event_source: Name of the construct type on which to react
@@ -131,7 +189,7 @@ class FunctionProvider(BaseConstructProvider):
         self.get_active_construct().add_event_source(event_source_type[source](event_source.get_active_construct()))
         return self
 
-    def withRole(self, role:str) -> 'Function':
+    def withRole(self, role:str) -> 'FunctionProvider':
         """
         Assigns a role to the function
         Works against the active function construct
@@ -140,17 +198,28 @@ class FunctionProvider(BaseConstructProvider):
         return self
     
     # INTERNAL API_________________
-    def _compile(self, function: FunctionDeployment) -> lambda_.Function:
+    def _compile(
+            self, 
+            node: dict
+        ) -> lambda_.Function:
         """
         Creates a AWS Lambda based on the FunctionDeployment configuration
         """
         # Compile the passed code to a folder location to link the required artifacts into the docker compilation process in the CDK
         # TODO Store code file to target
         # TODO Create poetry.toml from requirements
+        deployment, node = node['deployment'], node['node']
         func_obj = lambda_.Function(self.stack, 
-            id=function.uid, 
-            code=lambda_.Code.from_asset(str(function.code_location.parent.absolute())),
-            handler=function.handler,
-            runtime=lambda_.Runtime(function.runtime),
+            id=deployment.uid, 
+            code=lambda_.Code.from_asset(str(deployment.code_location.parent.absolute())),
+            handler=deployment.handler,
+            runtime=lambda_.Runtime(deployment.runtime),
             )
-        return func_obj
+        # This wrapped response enables recompilation and dynamic parametrization 
+        # of the deployable function construct within the Orchestrator
+        response = Function(
+            provider=self,
+            node=node,
+            construct=func_obj,     
+        )
+        return response

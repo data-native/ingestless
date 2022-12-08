@@ -2,7 +2,8 @@
 
 
 """
-from typing import List
+from pathlib import Path
+from typing import List, Dict
 from enums import Constructs
 from restmap.compiler.BaseCompiler import BaseCompiler
 from restmap.orchestrator.OrchestrationGraph import OrchestrationGraph
@@ -26,9 +27,17 @@ class Compiler(BaseCompiler):
     def __init__(self, compilation_dir: str = './ingestless/restmap/src') -> None:
         super().__init__(compilation_dir)
         #TODO Enable the compiler to receive a language compiler to select the type of compilation stack to use
+        self.heads = []
+        self._head_registry = {}
+        self.output_location = Path(compilation_dir)
+        # Instantiate the construct specific compiler
         self._function_compiler = FunctionCompiler(compiler=self)
 
-    def from_orchestration_graph(self, graph: OrchestrationGraph) -> List[FunctionDeployment]:
+    @property
+    def function(self):
+      return self._function_compiler
+
+    def from_orchestration_graph(self, graph: OrchestrationGraph) -> Dict[str, FunctionDeployment]:
         """
         Traverses the orchestration graph to compile the required components
         using the logic implemented in the resource Compiler classes.
@@ -43,16 +52,15 @@ class Compiler(BaseCompiler):
             # : self._compile_endpoint,
             # : self._compile_resolver,
         # }
-        
-        deployables = []
+        deployables = {}
         # Routes the template to the compilation method based on kind
-        for node in graph.nodes.values():
-          head = self._spawn_head()
+        for name, node in graph.nodes.items():
+          head = self._spawn_head(name)
           compiled_deployable = self._function_compiler.compile(head, node.construct) 
-          deployables.append(compiled_deployable)
+          deployables[name] = compiled_deployable
         return deployables
       
-    def _spawn_head(self) -> CompilerNode:
+    def _spawn_head(self, name:str) -> CompilerNode:
         """
         Starts a new parallel compilation tree head
         
@@ -60,14 +68,15 @@ class Compiler(BaseCompiler):
         a given compilation process.
         """
         head = CompilerNode(
-            _env = self.env,
-            _template = '',
+            env = self.env,
+            template = '',
             parent = None,
             children = [], 
             code= '',
-            _is_enclosing = True
+            is_enclosing = True
         )
         self.heads.append(head)
+        self._head_registry[name] = head
         return head
 
     def _compile_endpoint(self, graph: OrchestrationGraph) -> List[FunctionDeployment]:

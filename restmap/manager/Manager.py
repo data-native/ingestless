@@ -40,16 +40,19 @@ class Manager:
         self._state = State()
         self._parser = TemplateParser()
         self._resolver = Resolver()
+        self._compiler = Compiler()
         #TODO Extend to handle multiple compilation processes
-        self._compiler= Compiler()
         self._executor = self._init_executor(executor, name)
-        self._orchestrator = ServiceBusOrchestrator(executor=self._executor)
+        self._orchestrator = ServiceBusOrchestrator(
+            executor=self._executor,
+            compiler=self._compiler,
+            )
         self._deployables = []
     
     def _init_executor(self, executor: str, name: str) -> AbstractBaseExecutor:
         """Initializes the Provider instance for the chosen backend service"""
         if executor in ['aws', 'AWS']:
-            return AWSExecutor(name)
+            return AWSExecutor(name=name, compiler=self._compiler)
         else:
             return f"No BackendProvider implemented for backend: {executor}"
 
@@ -83,9 +86,9 @@ class Manager:
         # Computes the dependencies during execution
         orchestration_graph = self._orchestrator.orchestrate(resolution_graph=resolution_graph)
         # Compile the deployable assets
-        compiled_deployables = self._compiler.from_orchestration_graph(orchestration_graph)
+        compiled_deployables = self._executor._compiler.from_orchestration_graph(orchestration_graph)
         # Create the stack in the IaC Executor
-        self._orchestrator.deploy(self._deployables, dryrun=True)
+        self._orchestrator.deploy(deployables=compiled_deployables, graph=orchestration_graph, dryrun=True)
         return StatusCode.SUCCESS
 
     def deploy(self, dryrun:bool = False):

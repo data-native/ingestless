@@ -25,9 +25,8 @@ class Topic:
     Implements the common abstraction interface for function objects
     within the framework
     """
-
     provider: BaseConstructProvider
-    topic: sns.Topic
+    construct: sns.Topic
 
 class TopicProvider(BaseConstructProvider):
     """
@@ -52,7 +51,10 @@ class TopicProvider(BaseConstructProvider):
         """
         try:
             # TODO Extend the parametrization 
-            topic = sns.Topic(self.stack, name)
+            topic = Topic(
+                provider=self,
+                construct=sns.Topic(self.stack, name)
+            )
             self._constructs[name] = topic
         except JSIIError:
             print(f"Construct {name} already present in the stack.")
@@ -71,7 +73,9 @@ class TopicProvider(BaseConstructProvider):
     def grant_publish(self, target) -> 'TopicProvider':
         """Allows the function to publish to the current topic"""
         self._ensure_construct_scope()
-        self._construct_in_scope.grant_publish(target)
+        self.get_active_construct().grant_publish(target)
         return self
 
+    def use(self, construct: str) -> 'BaseConstructProvider':
+        return super().use(construct, )
     

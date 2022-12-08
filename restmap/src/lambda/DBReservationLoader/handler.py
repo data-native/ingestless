@@ -4,7 +4,7 @@ status = r.status_code
 
 # Handle response type conversion
 
- = r.text
+output = r.text
 body = 
 
 success_flag = True

@@ -26,9 +26,9 @@ class BodyParserNode(BodyParserNodeDefaults, CompilerNode, BodyParserNodeBase):
         template_params = {
 
         }
-        if self.node.params:
+        # if self.node.params:
             # TODO Implement parameter resolution in the function
-            template_params['params'] = {param.name: param.resolver.name for param in node.params}
+            # template_params['params'] = {param.name: param.resolver.name for param in node.params}
 
         return self._render_template(template_params) 
         

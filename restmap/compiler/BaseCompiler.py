@@ -4,6 +4,7 @@ from typing import List
 from enums import Constructs
 from restmap.resolver.ResolutionGraph import ResolutionGraph
 from restmap.compiler.CompilerNode import CompilerNode 
+# from restmap.orchestrator.OrchestrationGraph import OrchestrationNode
 
 #TODO Extend this to ABC
 class BaseCompiler:
@@ -18,9 +19,8 @@ class BaseCompiler:
     def __init__(self, compilation_dir:str='./ingestless/restmap/src') -> None:
         env = Environment(loader=PackageLoader("restmap", "compiler/templates"))
         self.env = env 
-        self.heads = []
-        self.output_location = Path(compilation_dir)
-
+        self._selected_head: CompilerNode = None
+     
     # TODO: Generalize the compiler to accept a language parameter and load the templates accordingly
     def compile(self, graph: ResolutionGraph):
         """
@@ -29,24 +29,41 @@ class BaseCompiler:
         to create the final code output.
         """ 
         pass
-        # TODO Resolve subtrees in 'enclosing nodes'
-         
-        # TODO Enable this traversal to receive a selected head endpoint 
-        # current_node = head 
-        # while current_node:
-            # if current_node == self.heads and not current_node.children:
-                # break out when reaching the root node
-                # return
-            # if not current_node.children:
-                # Reached a leave
-                # current_node.compile()
-                # Remove the child from the parent
-                # current_node.parent.children = [node for node in current_node.parent.children if node != current_node]
-                # go a level up
-                # current_node = current_node.parent
-            # else:
-                # current_node = current_node.children[0]
-        # else:
-            # Doesn't have any children of its own and 
-            # pass
+    
+    def use(self, node, compiler:'BaseCompiler'=None) -> 'BaseCompiler':
+        """
+        Sets the compilation graph for the given `OrchestrationNode`
+        to allow adapatations to the code compilation during later
+        stages of the execution process. 
+        """
+        return CompilationContextProvider(
+            compiler=compiler or self,
+            # kind='function', # TODO Check if this needs to be adapted
+            selected_construct=node.name
+        )
+    
+    def set_active(self, head: CompilerNode):
+        """Sets the given head as the current scope"""    
+        assert isinstance(head, CompilerNode)
+        self._selected_head = head
 
+class CompilationContextProvider:
+
+    def __init__(self,
+        compiler: BaseCompiler,
+        selected_construct: str
+    ) -> None:
+        self.compiler = compiler
+        self.selected_construct = selected_construct
+
+    def __enter__(self) -> BaseCompiler:
+        try:
+            # Identify the correct starting head
+            head = self.compiler._head_registry[self.selected_construct]
+            self.compiler.set_active(head=head)
+            return self.compiler
+        except KeyError:
+            raise KeyError(f"No construct {self.selected_construct} registered. If configured, register the function with the Provider first.") 
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.compiler._selected_head = None

@@ -15,6 +15,9 @@ from .provider.topic import TopicProvider
 from .provider.queue import QueueProvider
 from restmap.orchestrator.BaseOrchestrator import OrchestrationGraph
 
+# CONSTRUCT SPECIFIC COMPILERS__________
+from restmap.compiler.Compiler import Compiler
+from restmap.compiler.function.FunctionCompiler import FunctionCompiler
 class Stack(cdk.Stack):
     def __init__(self, scope: cdk.App, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -30,15 +33,25 @@ class AWSExecutor:
     ---------
     """
 
-    def __init__(self, name:str) -> None:
+    def __init__(self, 
+        name:str,
+        compiler: Compiler
+        ) -> None:
+        self._compiler = compiler
         self._scope = App()
         self._stack = self._init_stack(self._scope, construct_id=name)
         self._bucketProvider = BucketProvider(executor=self, stack=self._stack)
         self._functionProvider = FunctionProvider(executor=self, stack=self._stack)
-        self._topicProvider = TopicProvider(executor=self, stack=self._stack)
+        self._topicProvider = TopicProvider(executor=self,stack=self._stack)
         self._queueProvider = QueueProvider(executor=self, stack=self._stack)
         #TODO Add additional constructor providers
-    
+
+    def compile_orchestration_graph(self, graph:OrchestrationGraph):
+        """
+         
+        """
+        self._compiler.from_orchestration_graph(graph)
+
     def _init_stack(self,scope:App, construct_id='') -> cdk.Stack:
         return Stack(scope=scope, construct_id=construct_id)
     

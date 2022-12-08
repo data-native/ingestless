@@ -12,7 +12,7 @@ class RequestHandlerNodeBase:
 
 @dataclass
 class RequestHandlerNodeDefaults:
-    request_body: dict = field(default_factory=Dict) 
+    request_body: dict = field(default_factory=dict) 
     timeout: int = 500
     retry: int = 3
 
@@ -36,11 +36,4 @@ class RequestHandlerNode(RequestHandlerNodeDefaults, CompilerNode, RequestHandle
         # TODO Extend with all parameter configuration checks required 
 
     # TODO Add method interfaces to allow the parametrization of the node
-    @property
-    def method(self):
-        return self.method
-    @method.setter
-    def set_method(self, method: RestMethod):
-        assert isinstance(method, RestMethod)
-        self.method = method.value
 
