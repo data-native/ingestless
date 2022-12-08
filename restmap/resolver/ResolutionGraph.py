@@ -25,6 +25,19 @@ class ResolutionGraph:
         self._endpoints: Dict[str, EndpointNode.EndpointNode] = {}
         self._outputs: Dict[str, OutputNode.OutputNode] = {}
 
+        self.type_to_dict = {
+             EndpointNode.EndpointNode: self._endpoints,
+             ResolverNode.ResolverNode: self._resolvers,
+             ParamNode.ParamNode: self._params,
+             OutputNode.OutputNode: self._outputs,
+        }
+        self.name_to_dict = {
+             'endpoint': self._endpoints,
+             'resolver': self._resolvers,
+             'param': self._params,
+             'output': self._outputs,
+        }
+
     # PROPERTIES _________
     @property
     def kind(self) -> Constructs:
@@ -36,7 +49,18 @@ class ResolutionGraph:
         except:
             return ValueError(f"{kind} is not a supported Construct")
 
+    def add(self, nodetype: str, node:BaseNode ) -> None:
+        self.name_to_dict[nodetype][node.name] = node
+    
+    def get(self, nodetype:str, name: str) -> BaseNode:
+        return self.name_to_dict[nodetype][name]
+    
+    def remove(self, nodetype:str, name:str):
+        nodetype 
+        self.name_to_dict[nodetype].pop(name)
+
     # ENDPOINTS____________
+
     def add_endpoint(self, endpoint: EndpointNode.EndpointNode) -> None:
         """
         Adds an endpoint Node to the graph
@@ -92,4 +116,3 @@ class ResolutionGraph:
         return "Resolution Graph" 
     
 
-    

@@ -50,13 +50,14 @@ request data objecs called `CompilationRequest`
 
 """
 # TODO Add Doc on communication between compiler and construct compiler
-from typing import Union, List, Dict, Optional
+from typing import List
 from pathlib import Path
 from dataclasses import dataclass
 
 from restmap.resolver.ResolutionGraph import ResolutionGraph
 from restmap.compiler.function import RequestHandlerNode, HeaderNode, BodyParserNode
-from restmap.compiler.BaseCompiler import BaseCompiler, CompilerNode
+from restmap.compiler.BaseCompiler import BaseCompiler
+from restmap.compiler.CompilerNode import CompilerNode
 from restmap.resolver.nodes import BaseNode, EndpointNode, ParamNode
 from restmap.compiler.function.AuthenticatorNode import AuthenticatorNode
 from restmap.compiler.function.ResponseHandlerNode import ResponseHandlerNode
@@ -123,7 +124,7 @@ class FunctionDeployment:
     handler: str = 'handler' # Code compilation defaults to generating a function handler 
     is_deployed: bool = False
 
-class FunctionCompiler(BaseCompiler):
+class FunctionCompiler:
     """
     Compiles business logic
      
@@ -132,15 +133,18 @@ class FunctionCompiler(BaseCompiler):
     Tree structure allows the nodes to take their context
     into account when creating code fragments.
     """
-    def __init__(self, 
-        compiler: BaseCompiler, #Actually the parent Compiler. Used to access the other compiler to request resource allocation dynamically
+    def __init__(self,
+        compiler: BaseCompiler,
         compilation_dir: str='./ingestless/restmap/src', 
         language:str="Python@3.9",
         ) -> None:
-        super().__init__(compilation_dir)
+        self.compiler = compiler
         self._response_variable = 'output' # TODO Expose this glue variable name for parametrization
 
-    def compile(self, head: CompilerNode, function: BaseNode) -> FunctionDeployment:
+    def compile(self, 
+        head: CompilerNode, 
+        function: BaseNode
+        ) -> FunctionDeployment:
         """
         Assumes a loaded resolution graph that was transformed into the compilation graph
 
@@ -156,10 +160,10 @@ class FunctionCompiler(BaseCompiler):
 
         # TODO Resolve the graph for all functions
         # Conditionally add elements to the function that the compilations steps can reference 
-        if function.authenticator:
-            self.authenticator(head) 
-        if function.output:
-            self.output(head)
+        # if function.authenticator:
+            # self.authenticator(head) 
+        # if function.output:
+            # self.output(head)
 
         
         # TODO Refactor to nested template computation instead of string concatenation 
@@ -229,11 +233,11 @@ class FunctionCompiler(BaseCompiler):
             params=param_dict
             )
         # Conditionally append authenticator
-        header.child(self.authenticator(token_refresh=True))
+        # header.child(self.authenticator(token_refresh=True))
         # TODO Agent randomization. 
-        header.randomize_agents()
+        # header.randomize_agents()
         # TODO Encrypt traffic
-        header.encrypt_traffic()
+        # header.encrypt_traffic()
 
         return header.compile_code(node=node)
 
@@ -247,11 +251,11 @@ class FunctionCompiler(BaseCompiler):
         request = self.request_handler(
             parent=parent, 
             method='get',
-            response_type='text'
+            response_type='text',
         )
         # TODO Set the if condition business logic here
         # TODO IP randomization
-        request.rotate_ips()
+        # request.rotate_ips()
         # 
 
         # Compile the configured request handler to code and return code string
@@ -267,7 +271,11 @@ class FunctionCompiler(BaseCompiler):
         
         return response.compile_code()
 
-    def _compile_function_body(self, parent: CompilerNode, node: BaseNode) -> str:
+    def _compile_function_body(
+            self, 
+            parent: CompilerNode, 
+            node: BaseNode
+        ) -> str:
         """
         Compiles the code logic to handle the core logic in the function
         
@@ -288,12 +296,20 @@ class FunctionCompiler(BaseCompiler):
         """
         return {}
 
+    #TODO Refactor out to super class
+    def _ensure_parent(self, parent):
+        if not parent:
+            if not self.compiler._selected_head:
+                raise KeyError("No active head was set for the output node to be added to.")
+            parent = self.compiler._selected_head
+        return parent
+
     # NODES__________________
     def output(self,
-        parent: CompilerNode,
-        params: dict,
+        parent: CompilerNode = None,
+        
         template:str="functions/aws/header.jinja", # TODO Consider if a template for the authenticator is actually required, likely it will just carry values for the compilation nodes
-    ) -> LoaderNode.LoaderNode:
+    ) -> LoaderNode:
         """
         Data output configuration for the function to a selected
         storage system such as a database, table, bucket, queue, topic.
@@ -303,21 +319,21 @@ class FunctionCompiler(BaseCompiler):
         # What connection parameters to use
         # Parameters for the output process
         # 
-
-
+        parent = self._ensure_parent(parent)
 
         loader = LoaderNode(
-            _env=self.env,
-            _template=template,
+            target='Target',
+            env=self.compiler.env,
+            template=template,
             parent=None,
             children=[],
-            params=params,
         )
         self._append_to_parent(parent, loader)
+        return loader
 
     def header(self, 
-        parent: CompilerNode,
         params: dict,
+        parent: CompilerNode = None,
         template:str="functions/aws/header.jinja",
     ) -> HeaderNode.HeaderNode:
         """
@@ -328,9 +344,10 @@ class FunctionCompiler(BaseCompiler):
         * CORS Settings
         * #TODO Extend list of supported header configurations here .....
         """
+        parent = self._ensure_parent(parent)
         header = HeaderNode.HeaderNode(
-            _env=self.env,
-            _template=template,
+            env=self.compiler.env,
+            template=template,
             parent=None,
             children=[],
             params=params
@@ -338,32 +355,6 @@ class FunctionCompiler(BaseCompiler):
         self._append_to_parent(parent, header)
         return header
          
-    def _compile_params(self) -> DeploymentParams:
-        """
-        Compiles the deployment parameters for the function
-        given the overall configuration of the elements of the
-        function code. 
-
-        Caluclated params
-        ----------------------
-        * Allocated memory
-        * Parallelism
-        * 
-        """
-        return DeploymentParams(
-            min_allocated_memory_gb=128,
-            max_allocated_memory_gb=256,
-            timeout=300,
-            permissions=['DynamoDBReader'],
-            env_variables={},
-            tags=[],
-            is_monitored=True,
-            is_traced=True,
-            concurrency=10
-        )
-    # TODO: Remove and replace with build in jinja function
-    
-    #TODO
     def request_handler(self, 
         parent: CompilerNode, 
         method: str,
@@ -374,8 +365,8 @@ class FunctionCompiler(BaseCompiler):
         Create the compiled handler Node
         """
         handler = RequestHandlerNode.RequestHandlerNode(
-                _template=template, 
-                _env=self.env, 
+                template=template, 
+                env=self.compiler.env, 
                 parent=None, 
                 children=[], 
                 code='Handler Code\n',
@@ -392,8 +383,8 @@ class FunctionCompiler(BaseCompiler):
         template:str="functions/aws/body_parser.jinja",
         ) -> BodyParserNode.BodyParserNode:
         parser = BodyParserNode.BodyParserNode(
-            _template=template,
-            _env=self.env, 
+            template=template,
+            env=self.compiler.env, 
             parent=None,
             children=[]
             )
@@ -412,8 +403,8 @@ class FunctionCompiler(BaseCompiler):
         Response generation and handling 
         """
         response_handler = ResponseHandlerNode(
-            _template=template,
-            _env=self.env, 
+            template=template,
+            env=self.compiler.env, 
             parent=None, 
             children=[]
         )
@@ -439,17 +430,43 @@ class FunctionCompiler(BaseCompiler):
             'NameAndPassword': CredentialsAuthenticator,
         }
         authenticator = kind_switch[kind](
-            _template=template,
-            _env=self.env,
+            template=template,
+            env=self.compiler.env,
             parent=parent,
-            children=[]
+            children=[],
+            token_refresh=True,
         )
         self._append_to_parent(parent, authenticator)
         return authenticator
 
+    def _compile_params(self) -> DeploymentParams:
+        """
+        Compiles the deployment parameters for the function
+        given the overall configuration of the elements of the
+        function code. 
+
+        Caluclated params
+        ----------------------
+        * Allocated memory
+        * Parallelism
+        * 
+        """
+        return DeploymentParams(
+            min_allocated_memory_gb=128,
+            max_allocated_memory_gb=256,
+            timeout=300,
+            permissions=['DynamoDBReader'],
+            env_variables={},
+            tags=[],
+            is_monitored=True,
+            is_traced=True,
+            concurrency=10
+        )
+
+    # TODO Replace with native Jinja functionality
     def _save_to_file(self, name:str, doc: str):
         """Output the compilation result to file location"""
-        path = self.output_location / f"lambda/{name}"  
+        path = self.compiler.output_location / f"lambda/{name}"  
         if not path.is_dir():
             path.mkdir(parents=True, exist_ok=True)
         path = path / "handler.py" 
@@ -462,3 +479,5 @@ class FunctionCompiler(BaseCompiler):
         parent.child(node) 
 
 
+    def use(self, node) -> 'FunctionCompiler':
+        return self.compiler.use(node)

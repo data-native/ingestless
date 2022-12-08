@@ -6,12 +6,10 @@ from restmap.resolver.nodes.BaseNode import BaseNode
 @dataclass
 class _OutputNodeBase:
     kind: str
-    authentication: dict
-
+    provider: dict
 @dataclass
 class _OutputNodeDefaults:
-    pass
-
+    authentication: dict = None
 @dataclass
 class OutputNode(_OutputNodeDefaults, BaseNode, _OutputNodeBase):
     """
@@ -19,3 +17,25 @@ class OutputNode(_OutputNodeDefaults, BaseNode, _OutputNodeBase):
     value for a given parameter value in other services.
     """
     pass     
+
+@dataclass
+class _BlobOutputNodeBase:
+    pass
+@dataclass
+class _BlobOutputNodeDefaults:
+    pass
+@dataclass
+class BlobOutputNode(_BlobOutputNodeDefaults, OutputNode, _BlobOutputNodeBase):
+    pass
+
+@dataclass
+class TableOutputNode(OutputNode):
+    pass
+
+@dataclass
+class QueueOutputNode(OutputNode):
+    pass
+
+@dataclass
+class DatabaseOutputNode(OutputNode):
+    pass

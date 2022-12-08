@@ -32,10 +32,3 @@ def test_load(parser: TemplateParser, template_path):
     assert isinstance(template, TemplateSchema)
     assert isinstance(template.metadata, MetadataDict)
     assert isinstance(template.config, ConfigurationDict)
-
-
-def test_logic(parser: TemplateParser, template_path):
-    # Create an endpoint template
-
-    parser.load(template_path)
-    # ``

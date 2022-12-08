@@ -27,13 +27,12 @@ class TestNodeResolution:
         manager: Manager, 
         template_path: Path, 
         template:TemplateSchema, 
-        resolver: Resolver
         ):
         manager.plan(template_path)
         endpoint = template.config.endpoints[0]
         name = list(endpoint.keys())[0]
         endpoint_dict = endpoint[name]
-        response = resolver._resolve_endpoint(name, endpoint_dict)
+        response = manager._resolver._resolve_endpoint(name, endpoint_dict)
         assert isinstance(response, EndpointNode.EndpointNode)
         
     def test__resolve_resolvers(self, 

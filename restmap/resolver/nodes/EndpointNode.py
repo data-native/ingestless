@@ -20,14 +20,16 @@ RelativeURLNode: Builds up on the BaseURLNode endpoint configuration to execute
 from dataclasses import dataclass, field
 from pathlib import Path
 from .BaseNode import BaseNode
-from restmap.resolver.nodes.ParamNode import ParamNode
+from restmap.resolver.nodes import OutputNode, ParamNode
+
 
 @dataclass
 class _EndpointNodeBase:
     kind: str
 @dataclass
 class _EndpointNodeDefaults:
-    params: list[ParamNode] = field(default_factory=list)
+    params: list[ParamNode.ParamNode] = field(default_factory=list)
+    output: list[OutputNode.OutputNode] = field(default_factory=list)
 @dataclass
 class EndpointNode(_EndpointNodeDefaults, BaseNode, _EndpointNodeBase):
     """
@@ -61,6 +63,7 @@ class BaseURLNode(_BaseURLNodeDefaults, EndpointNode, _BaseURLNodeBase):
     but carries configuration that is reused across RelativeURLNodes.
     """
     pass
+
 
 @dataclass 
 class _RelativeURLNodeBase:
