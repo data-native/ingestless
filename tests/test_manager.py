@@ -160,7 +160,7 @@ class TestFunctionManager:
         response = local_manager.unschedule_function(registered_function.name)
         assert response.SUCCESS, "Function must correctly complete with StatusCode.SUCCESS"
         rules = local_manager._provider.list_rules_by_target(
-            type=Services.Function,
+            type=Services.FUNCTION,
             target=registered_function.name)
         rule_dict = rules['RuleNames']
         #TODO: Check that the function model no longer has a schedule associated

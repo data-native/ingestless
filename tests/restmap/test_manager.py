@@ -18,6 +18,7 @@ def template_path():
 
 def test_can_plan(template_path: Path, manager: Manager):
     manager.plan(template_path)
+    assert manager
     
 
 def test_can_validate(template_path: Path, manager: Manager):

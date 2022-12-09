@@ -18,7 +18,7 @@ class BodyParserNode(BodyParserNodeDefaults, CompilerNode, BodyParserNodeBase):
     * 
     """
     
-    def compile_code(self):
+    def recompile(self):
         """
         Body Parser compiles the body parsing logic
         into the file

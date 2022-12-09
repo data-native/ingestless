@@ -82,7 +82,7 @@ class TestFunctionCompiler:
             response_type='text'
         )
         auth = func_compiler.authenticator(handler)
-        handler.compile_code()
+        handler.recompile()
         assert isinstance(handler, RequestHandlerNode.RequestHandlerNode)
         assert len(compiler.heads) == 1, "calling head without parent defined must create parallel compilation tree"
         assert compiler.heads[0].children[0] == handler
@@ -114,7 +114,7 @@ class TestFunctionCompiler:
         """
         head = compiler._spawn_head()
         parser = func_compiler.body_parser(head)
-        response = parser.compile_code()
+        response = parser.recompile()
         assert response
         assert isinstance(response, str)
 
@@ -128,7 +128,7 @@ class TestFunctionCompiler:
     def test_compile_response_handler(self, compiler: Compiler, func_compiler: FunctionCompiler):
         head = compiler._spawn_head()
         response_handler = func_compiler.response_handler(head)
-        response = response_handler.compile_code()
+        response = response_handler.recompile()
         assert response
         assert isinstance(response, str)
 
@@ -210,7 +210,7 @@ class TestCompilerNode:
     def test_render_template(self, manager: Manager, func_compiler: FunctionCompiler):
         head = manager._compiler._spawn_head()
         header = func_compiler.header(head)
-        response = header.compile_code()
+        response = header.recompile()
         assert isinstance(response, str), "Must return a code string rendered by the template"
         #TODO Extend the assertions on the template rendering process applied here
     

@@ -27,9 +27,9 @@ class AWSProvider(BackendProvider):
         self._clients = {}
         # Maps the general Provider API to the AWS native services
         self.service_switch = {
-            Services.Function : 'lambda',
-            Services.ServiceBus : 'events',
-            Services.StateMachine : 'stepfunctions',
+            Services.FUNCTION : 'lambda',
+            Services.SERVICEBUS : 'events',
+            Services.STATEMACHINE : 'stepfunctions',
         }
         super().__init_subclass__()
 
@@ -72,11 +72,11 @@ class AWSProvider(BackendProvider):
 
     # Functions____________
     def list_functions(self) -> List[Dict]:
-        functions = self.get_client(Services.Function).list_functions()
+        functions = self.get_client(Services.FUNCTION).list_functions()
         return functions['Functions']
     
     def read_function(self, name: str) -> Dict:
-        function = self.get_client(Services.Function).get_function(FunctionName=name)
+        function = self.get_client(Services.FUNCTION).get_function(FunctionName=name)
         return function
     
     # EVENTS__________________-
@@ -84,7 +84,7 @@ class AWSProvider(BackendProvider):
         """
         Retrieves details of a rule
         """
-        response = self.get_client(Services.ServiceBus).describe_rule(Name=name)
+        response = self.get_client(Services.SERVICEBUS).describe_rule(Name=name)
         return response
         # response = self._clients[Services.ServiceBus].describe_rule(name=name)
 
@@ -92,23 +92,23 @@ class AWSProvider(BackendProvider):
         """
         Disables a rule
         """
-        response = self.get_client(Services.ServiceBus).disable_rule(Name=name)
+        response = self.get_client(Services.SERVICEBUS).disable_rule(Name=name)
         return response 
     
     def enable_rule(self, name:str):
         """
         Enables a given rule
         """
-        response = self.get_client(Services.ServiceBus).enable_rule(Name=name)
+        response = self.get_client(Services.SERVICEBUS).enable_rule(Name=name)
         return response
     
     def list_rules_by_target(self, type: Services, target:str) -> List:
         """
         Lists the rules for the specified target.
         """
-        if type == Services.Function:
+        if type == Services.FUNCTION:
             function = FunctionModel.get(target)
-            response = self.get_client(Services.ServiceBus).list_rule_names_by_target(TargetArn=function.attributes['FunctionArn'])
+            response = self.get_client(Services.SERVICEBUS).list_rule_names_by_target(TargetArn=function.attributes['FunctionArn'])
             return response
         else:
             raise ValueError("No suitable service type specified")
@@ -118,7 +118,7 @@ class AWSProvider(BackendProvider):
         Lists all Bus rules.
         Can provide a prefix to filter the result set.
         """
-        response = self.get_client(Services.ServiceBus).list_rules()
+        response = self.get_client(Services.SERVICEBUS).list_rules()
         return response
     
     def list_targets_by_rule(self, rule:str):
@@ -126,7 +126,7 @@ class AWSProvider(BackendProvider):
         Lists all targets of the given rule:
         @rule: (str) Name of the rule to inspect
         """
-        response = self.get_client(Services.ServiceBus).list_targets_by_rule(Rule=rule)
+        response = self.get_client(Services.SERVICEBUS).list_targets_by_rule(Rule=rule)
         return response
     
     def put_permissions(self, action: str, principal: str, statementId: str, condition: dict):
@@ -134,7 +134,7 @@ class AWSProvider(BackendProvider):
         Puts a permission to the specified AWS account to put 
         events to your account. 
         """
-        response = self._clients[Services.ServiceBus].put_permissions(Action=action, Principal=principal, StatementId=statementId, Condition=condition)
+        response = self._clients[Services.SERVICEBUS].put_permissions(Action=action, Principal=principal, StatementId=statementId, Condition=condition)
         return response
     
     def put_rule(self, rule: dict):
@@ -142,7 +142,7 @@ class AWSProvider(BackendProvider):
         Add or update a given rule which is set active on default.
         """
         try:
-            response = self.get_client(Services.ServiceBus).put_rule(**rule)
+            response = self.get_client(Services.SERVICEBUS).put_rule(**rule)
             return response['RuleArn'] 
         except BotoCoreExceptions.ClientError as client_e:
             logging.debug(f"event put_rule::ClientError: {client_e}")
@@ -156,7 +156,7 @@ class AWSProvider(BackendProvider):
         Add or update a given rule which is set active on default.
         """
         try:
-            response = self.get_client(Services.ServiceBus).put_targets(
+            response = self.get_client(Services.SERVICEBUS).put_targets(
                 Rule=rule,
                 Targets=targets
                 )
@@ -176,18 +176,18 @@ class AWSProvider(BackendProvider):
         by retrieving the details and filling in the request body message.
         """
         response = None
-        if type == Services.Function:
+        if type == Services.FUNCTION:
             # Fill lambda details
             # TODO: Use predefined Role to trigger the target lambda function
             function_target = EventTargetItem(
                 Id=target['FunctionName'],
                 Arn= target['FunctionArn']
             )
-            response = self.get_client(Services.ServiceBus).put_targets(
+            response = self.get_client(Services.SERVICEBUS).put_targets(
                 Rule=rule,
                 Targets=[function_target.__dict__]
             )
-        if type == Services.StateMachine:
+        if type == Services.STATEMACHINE:
             # Fill lambda details
             raise NotImplementedError
         return response
@@ -204,7 +204,7 @@ class AWSProvider(BackendProvider):
             targets = [targets]
 
         if type == Models.FUNCTION.value:
-            response = self.get_client(Services.ServiceBus).remove_targets(
+            response = self.get_client(Services.SERVICEBUS).remove_targets(
                 Rule=rule,
                 Ids=targets
             )

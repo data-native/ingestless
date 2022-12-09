@@ -23,7 +23,7 @@ class ResponseHandlerNode(ResponseHandlerDefaults, CompilerNode , ResponseHandle
     * Enable to set validation
     """
 
-    def compile_code(self):
+    def recompile(self):
         """
         Extract parameters for the compilation from the 
         """

@@ -119,7 +119,7 @@ def test_put_target_function(AwsProvider: AWSProvider):
     functions = AwsProvider.list_functions()
     response = AwsProvider.put_event_target(
         rule=rule_name,
-        type=Services.Function,
+        type=Services.FUNCTION,
         target=functions[0]
     )
     assert response
@@ -185,13 +185,13 @@ def test_remove_event_targets(AwsProvider: AWSProvider):
     functions = AwsProvider.list_functions()
     AwsProvider.put_event_target(
         rule=rule_name,
-        type=Services.Function,
+        type=Services.FUNCTION,
         target=functions[0]
     )
     # Calling the function
     AwsProvider.remove_event_targets(
         rule=rule_name,
-        type=Services.Function,
+        type=Services.FUNCTION,
         targets=functions[0]['FunctionName']
     )
     # Clean up

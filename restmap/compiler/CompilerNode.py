@@ -38,9 +38,9 @@ class CompilerNode:
             # Collect return from component registration
             # Needs to first compile its children before it can return its final string
             for child in node.children:
-                self.code += child.compile_code()
+                self.code += child.recompile()
                 self.children = [node for node in self.children if node != child]
-        self.code += self.compile_code()
+        self.code += self.recompile()
         return self.code 
 
     def _render_template(self, arg_dict: dict=None) -> str:
@@ -53,7 +53,7 @@ class CompilerNode:
         template = self.env.get_template(self.template)
         return template.render(arg_dict)
 
-    def compile_code(self):
+    def recompile(self):
         """
         Compile the code template given the parameters
         set on the node instance. 

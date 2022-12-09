@@ -15,6 +15,7 @@ from typing import List, Union, Dict
 import aws_cdk as cdk
 import aws_cdk.aws_lambda as lambda_
 import aws_cdk.aws_sns as sns
+import aws_cdk.aws_sqs as sqs
 import aws_cdk.aws_lambda_event_sources as event_sources
 
 from ..BaseConstructProvider import BaseConstructProvider
@@ -60,13 +61,14 @@ class Function(BaseConstruct):
         """
         # TODO Add the output node to the function graph
         # Configure the output
-        output_dict = {
-        } 
         with self.compiler.use(self.node) as f: 
-            f.function.output(
-                 
-                # Parametrize the output node
-            )
+            output = f.function.output()
+            # Registers all targets
+            output_switch = {
+                sns.Topic: output.to_topic,
+                sqs.Queue: output.to_queue,
+            } 
+            output_switch[type(sink)]
         return self
     
     # Move this up to base construct to overwrite 
@@ -78,6 +80,8 @@ class Function(BaseConstruct):
         """
         Recompiles the function code after updating it 
         """
+        with self.compiler.use(self.node) as n:
+            self.compiler.function.compile(self.compiler.function ,function=n)
         raise NotImplementedError
 class FunctionProvider(BaseConstructProvider):
     """

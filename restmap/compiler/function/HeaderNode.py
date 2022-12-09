@@ -20,7 +20,7 @@ class HeaderNodeDefaults:
 @dataclass
 class HeaderNode(HeaderNodeDefaults, CompilerNode, HeaderNodeBase):
 
-    def compile_code(self, 
+    def recompile(self, 
         node: BaseNode,
         child_template:bool=False, 
         parent_template:str='', 

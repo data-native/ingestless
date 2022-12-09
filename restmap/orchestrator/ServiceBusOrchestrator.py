@@ -70,7 +70,7 @@ class ServiceBusOrchestrator(BaseOrchestrator):
                         # Publish to a topic named after the resolved parameter
                         # So that each service can consume the resolved parameters when they become available 
                         f.notify(
-                            topic=t, 
+                            topic=t.get_active_construct(), 
                             synchronous=True, 
                             on='success', 
                             params={},

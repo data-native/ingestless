@@ -239,7 +239,7 @@ class FunctionCompiler:
         # TODO Encrypt traffic
         # header.encrypt_traffic()
 
-        return header.compile_code(node=node)
+        return header.recompile(node=node)
 
     def _compile_request_handler(self, 
         parent: CompilerNode, 
@@ -259,7 +259,7 @@ class FunctionCompiler:
         # 
 
         # Compile the configured request handler to code and return code string
-        return request.compile_code()
+        return request.recompile()
         
     def _compile_response_handler(self, parent: CompilerNode, node: BaseNode) -> str:
         """
@@ -269,7 +269,7 @@ class FunctionCompiler:
         response = self.response_handler(parent=parent)
         # Attribute to the reponse object based on set parameters on the graph
         
-        return response.compile_code()
+        return response.recompile()
 
     def _compile_function_body(
             self, 
@@ -288,7 +288,7 @@ class FunctionCompiler:
         # Attribute the list of associated plugins based on attributes on the graph
 
         # Compile code
-        return body.compile_code()
+        return body.recompile()
 
     def _compile_requirements(self, head: CompilerNode):
         """
@@ -307,7 +307,6 @@ class FunctionCompiler:
     # NODES__________________
     def output(self,
         parent: CompilerNode = None,
-        
         template:str="functions/aws/header.jinja", # TODO Consider if a template for the authenticator is actually required, likely it will just carry values for the compilation nodes
     ) -> LoaderNode:
         """
@@ -322,7 +321,7 @@ class FunctionCompiler:
         parent = self._ensure_parent(parent)
 
         loader = LoaderNode(
-            target='Target',
+            target=None,
             env=self.compiler.env,
             template=template,
             parent=None,

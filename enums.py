@@ -43,9 +43,13 @@ class Services(Enum):
     to place the correct native service in relation to the general
     service description used here. 
     """
-    Function = auto()
-    StateMachine = auto()
-    ServiceBus = auto()
+    FUNCTION = auto()
+    BUCKET = auto()
+    STATEMACHINE = auto()
+    SERVICEBUS = auto()
+    QUEUE = auto()
+    TOPIC = auto()
+    TABLE = auto()
 
 class Constructs(Enum):
     """
