@@ -5,6 +5,7 @@ for AWS infrastructure automation
 Implements using the AWS CDK
 """
 
+import boto3
 from typing import Any
 import aws_cdk as cdk
 from aws_cdk import App
@@ -38,8 +39,12 @@ class AWSExecutor:
         compiler: Compiler
         ) -> None:
         self._compiler = compiler
+        # IaC (CDK assets)
         self._scope = App()
         self._stack = self._init_stack(self._scope, construct_id=name)
+        self._iac_template = None
+        self.clf_client = boto3.client('cloudformation')
+        # Provider
         self._bucketProvider = BucketProvider(executor=self, stack=self._stack)
         self._functionProvider = FunctionProvider(executor=self, stack=self._stack)
         self._topicProvider = TopicProvider(executor=self,stack=self._stack)
@@ -100,30 +105,48 @@ class AWSExecutor:
 
     # METHOD API _________________
     # These methods manage the IaC configuration and deployment process
-    def compile(self, graph: OrchestrationGraph ):
+    def compile(self):
         """Compile the iac template based on an orchestrated deployment graph"""
+        from aws_cdk.assertions import Template
         # Just compiles the configured stack, does not own any logic.
         # Business logic is placed in the orchestrator
-        raise NotImplementedError
+        self._scope.synth()
+        template = Template.from_stack(self._stack)
+        self._iac_template = template
+        # Save the file to the correct location
 
     def deploy(self):
         """Compile and deploy the stack onto the AWS backend"""
-        # 
-        self.compile()
-        raise NotImplementedError
-
+        import boto3
+        import json
+        if not self._iac_template:
+            self.compile()
+        response = self.clf_client.create_stack(
+            StackName='test', 
+            TemplateBody=json.dumps(self._iac_template.to_json()), 
+            Parameters=[], 
+            DisableRollback=False, 
+            TimeoutInMinutes=2, 
+            Tags=[]
+        )
+        return response
          
     def diff(self, update):
         """
         Compute the difference between the current deployed stack
         and the updates meant for deployment.
         """
-        import subprocess
-        return subprocess.run(["cdk", "synth"], shell=True)
+        self.compile()
+        self.clf_client 
+        # Get the 
     
-    def tear_down(self):
+    def tear_down(self, stack:str):
         """
         Destroys the stack
         """
-        import subprocess
-        return subprocess.run(["cdk", "destroy"], shell=True)
+        try:
+            response = self.clf_client.delete_stack(StackName=stack)
+            if response['ResponseMetadata']['HTTPStatusCode'] != 200:
+                raise ConnectionError("The connection was refused. Please try again")
+        except Exception as e:
+            raise(e)

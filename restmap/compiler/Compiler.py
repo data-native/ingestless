@@ -37,6 +37,7 @@ class Compiler(BaseCompiler):
     def function(self):
       return self._function_compiler
 
+    
     def from_orchestration_graph(self, graph: OrchestrationGraph) -> Dict[str, FunctionDeployment]:
         """
         Traverses the orchestration graph to compile the required components

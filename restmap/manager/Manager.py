@@ -47,7 +47,7 @@ class Manager:
             executor=self._executor,
             compiler=self._compiler,
             )
-        self._deployables = []
+        self.is_planned:bool = False
     
     def _init_executor(self, executor: str, name: str) -> AbstractBaseExecutor:
         """Initializes the Provider instance for the chosen backend service"""
@@ -86,9 +86,10 @@ class Manager:
         # Computes the dependencies during execution
         orchestration_graph = self._orchestrator.orchestrate(resolution_graph=resolution_graph)
         # Compile the deployable assets
-        compiled_deployables = self._executor._compiler.from_orchestration_graph(orchestration_graph)
+        deployables = self._compiler.from_orchestration_graph(orchestration_graph)
         # Create the stack in the IaC Executor
-        self._orchestrator.deploy(deployables=compiled_deployables, graph=orchestration_graph, dryrun=True)
+        self._orchestrator.deploy(deployables=deployables, graph=orchestration_graph, dryrun=True)
+        self.is_planned = True
         return StatusCode.SUCCESS
 
     def deploy(self, dryrun:bool = False):
@@ -100,7 +101,7 @@ class Manager:
         """
         #TODO Extend to handle a list of individual templates to deploy in one step
         # Validate that 
-        if not self._deployables:
+        if not self.is_planned:
             # Try reading from set configuration location on default
             # Check that there is a difference to deploy
             # If not quit => 
@@ -108,7 +109,7 @@ class Manager:
 
         else:
             # Conduct the actual deployment to the selected backend platform
-            self._orchestrator.deploy(self._deployables, dryrun)
+            self._executor.deploy()
         
     def init(self):
         """
